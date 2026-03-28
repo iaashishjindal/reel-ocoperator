@@ -43,6 +43,25 @@ export default function ReelGenerator() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
+
+  // Pre-load the audio file on mount
+  useEffect(() => {
+    const loadAudio = async () => {
+      try {
+        const ctx = new AudioContext();
+        const response = await fetch('/clash.mp3');
+        const arrayBuffer = await response.arrayBuffer();
+        audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
+        await ctx.close();
+      } catch (e) {
+        console.warn('Audio pre-load failed:', e);
+      }
+    };
+    loadAudio();
+  }, []);
   const animationFrameRef = useRef<number | null>(null);
 
   const msPerWord = 150;
@@ -704,8 +723,28 @@ export default function ReelGenerator() {
     setVideoUrl(null);
     chunksRef.current = [];
 
-    // Set up MediaRecorder for MP4 (or fallback to WebM)
+    // Set up canvas stream
     const stream = canvas.captureStream(60); // 60 FPS
+
+    // Mix in CLASH audio
+    if (audioBufferRef.current) {
+      try {
+        const audioCtx = new AudioContext();
+        audioContextRef.current = audioCtx;
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBufferRef.current;
+        source.loop = true;
+        audioSourceRef.current = source;
+        const dest = audioCtx.createMediaStreamDestination();
+        source.connect(dest);
+        dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+        source.start(0);
+      } catch (e) {
+        console.warn('Audio mix failed, recording without audio:', e);
+      }
+    }
+
+    // Set up MediaRecorder for MP4 (or fallback to WebM)
     let options = { mimeType: 'video/mp4;codecs=avc1' };
     if (!MediaRecorder.isTypeSupported(options.mimeType)) {
       options = { mimeType: 'video/mp4' };
@@ -716,9 +755,9 @@ export default function ReelGenerator() {
     if (!MediaRecorder.isTypeSupported(options.mimeType)) {
       options = { mimeType: 'video/webm' };
     }
-    
+
     setVideoExt(options.mimeType.includes('mp4') ? 'mp4' : 'webm');
-    
+
     const mediaRecorder = new MediaRecorder(stream, options);
     mediaRecorderRef.current = mediaRecorder;
 
@@ -729,6 +768,12 @@ export default function ReelGenerator() {
     };
 
     mediaRecorder.onstop = () => {
+      // Stop audio
+      try { audioSourceRef.current?.stop(); } catch (_) {}
+      try { audioContextRef.current?.close(); } catch (_) {}
+      audioSourceRef.current = null;
+      audioContextRef.current = null;
+
       const blob = new Blob(chunksRef.current, { type: options.mimeType });
       const url = URL.createObjectURL(blob);
       setVideoUrl(url);
@@ -775,6 +820,10 @@ export default function ReelGenerator() {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
+    try { audioSourceRef.current?.stop(); } catch (_) {}
+    try { audioContextRef.current?.close(); } catch (_) {}
+    audioSourceRef.current = null;
+    audioContextRef.current = null;
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
