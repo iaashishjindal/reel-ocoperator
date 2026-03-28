@@ -29,6 +29,7 @@ export default function ReelGenerator() {
   const [copied, setCopied] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [postStatus, setPostStatus] = useState<'idle' | 'uploading' | 'posting' | 'done' | 'error'>('idle');
+  const [postError, setPostError] = useState<string | null>(null);
 
   const [usageCost, setUsageCost] = useState(0);
   const [resetDate, setResetDate] = useState('');
@@ -777,33 +778,43 @@ export default function ReelGenerator() {
     if (!videoUrl) return;
     setIsPosting(true);
     setPostStatus('uploading');
+    setPostError(null);
     try {
       // Fetch the blob from the object URL
       const videoRes = await fetch(videoUrl);
       const videoBlob = await videoRes.blob();
+      const fileSizeMB = (videoBlob.size / 1024 / 1024).toFixed(1);
 
       // Upload to Cloudinary
       const formData = new FormData();
       formData.append('video', videoBlob, `reel-${getFormattedDate()}.mp4`);
       const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!uploadRes.ok) throw new Error('Upload failed');
-      const { url } = await uploadRes.json();
+      if (!uploadRes.ok) {
+        const body = await uploadRes.json().catch(() => ({}));
+        throw new Error(`[Step 1 — Upload] ${body.error || body.message || `HTTP ${uploadRes.status}`} (file size: ${fileSizeMB}MB)`);
+      }
+      const uploadData = await uploadRes.json();
+      if (!uploadData.url) throw new Error(`[Step 1 — Upload] No URL returned from Cloudinary. Response: ${JSON.stringify(uploadData)}`);
 
       // Trigger Make.com → Instagram
       setPostStatus('posting');
       const postRes = await fetch('/api/post-instagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoUrl: url, caption }),
+        body: JSON.stringify({ videoUrl: uploadData.url, caption }),
       });
-      if (!postRes.ok) throw new Error('Post failed');
+      if (!postRes.ok) {
+        const body = await postRes.json().catch(() => ({}));
+        throw new Error(`[Step 2 — Instagram] ${body.error || body.message || `HTTP ${postRes.status}`}`);
+      }
 
       setPostStatus('done');
-      setTimeout(() => setPostStatus('idle'), 3000);
-    } catch (e) {
+      setPostError(null);
+      setTimeout(() => setPostStatus('idle'), 4000);
+    } catch (e: any) {
       console.error(e);
       setPostStatus('error');
-      setTimeout(() => setPostStatus('idle'), 3000);
+      setPostError(e?.message || 'Unknown error — check browser console (F12)');
     } finally {
       setIsPosting(false);
     }
@@ -1035,7 +1046,14 @@ export default function ReelGenerator() {
             </>
           )}
         </div>
-        
+
+        {postError && (
+          <div className="mt-3 p-3 bg-red-950 border border-red-500/50 rounded-lg">
+            <p className="text-red-400 text-xs font-mono font-semibold mb-1">ERROR — screenshot this and share with Aashish</p>
+            <p className="text-red-300 text-xs font-mono break-all">{postError}</p>
+          </div>
+        )}
+
         {isRecording && (
           <div className="flex items-center justify-center gap-2 text-emerald-500 text-sm font-medium animate-pulse">
             <Loader2 className="w-4 h-4 animate-spin" />
