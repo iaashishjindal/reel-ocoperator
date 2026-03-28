@@ -26,12 +26,17 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    const uniqueId = `reel_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
     const result = await new Promise<any>((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {
           resource_type: 'video',
           folder: 'gpt-unfiltered-reels',
+          public_id: uniqueId,
           format: 'mp4',
+          unique_filename: true,
+          overwrite: false,
         },
         (error, result) => {
           if (error) reject(error);
