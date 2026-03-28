@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Download, Play, Square, Loader2, Sparkles, Copy, Check, Instagram } from 'lucide-react';
+import { Download, Loader2, Sparkles, Copy, Check, Instagram } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 
 export default function ReelGenerator() {
@@ -28,12 +28,13 @@ export default function ReelGenerator() {
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-  const [postStatus, setPostStatus] = useState<'idle' | 'uploading' | 'posting' | 'publishing' | 'done' | 'error'>('idle');
+  const [postStatus, setPostStatus] = useState<'idle' | 'recording' | 'uploading' | 'posting' | 'publishing' | 'done' | 'error'>('idle');
   const [publishingSecsLeft, setPublishingSecsLeft] = useState(0);
   const publishingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [postError, setPostError] = useState<string | null>(null);
   const [postLogs, setPostLogs] = useState<string[]>([]);
   const [logsCopied, setLogsCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const addLog = (msg: string) => {
     const ts = new Date().toISOString().split('T')[1].replace('Z', '');
@@ -42,12 +43,22 @@ export default function ReelGenerator() {
 
   const resetAll = () => {
     if (publishingTimerRef.current) clearInterval(publishingTimerRef.current);
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    try { audioSourceRef.current?.stop(); } catch (_) {}
+    try { audioContextRef.current?.close(); } catch (_) {}
+    audioSourceRef.current = null;
+    audioContextRef.current = null;
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
     setVideoUrl(null);
     setPostStatus('idle');
     setPostError(null);
     setPostLogs([]);
     setIsPosting(false);
     setPublishingSecsLeft(0);
+    setIsRecording(false);
+    setIsDownloading(false);
   };
 
   const [usageCost, setUsageCost] = useState(0);
@@ -724,135 +735,103 @@ export default function ReelGenerator() {
     ctx.restore();
   };
 
-  const startRecording = () => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const recordVideo = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!canvasRef.current) { reject(new Error('Canvas not available')); return; }
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas context not available')); return; }
 
-    setIsRecording(true);
-    setVideoUrl(null);
-    chunksRef.current = [];
+      setIsRecording(true);
+      setVideoUrl(null);
+      chunksRef.current = [];
 
-    // Set up canvas stream
-    const stream = canvas.captureStream(60); // 60 FPS
+      const stream = canvas.captureStream(60);
 
-    // Mix in CLASH audio
-    if (audioBufferRef.current) {
-      try {
-        const audioCtx = new AudioContext();
-        audioContextRef.current = audioCtx;
-        const source = audioCtx.createBufferSource();
-        source.buffer = audioBufferRef.current;
-        source.loop = true;
-        audioSourceRef.current = source;
-        const dest = audioCtx.createMediaStreamDestination();
-        source.connect(dest);
-        dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
-        source.start(0);
-      } catch (e) {
-        console.warn('Audio mix failed, recording without audio:', e);
-      }
-    }
-
-    // Set up MediaRecorder for MP4 (or fallback to WebM)
-    let options = { mimeType: 'video/mp4;codecs=avc1' };
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options = { mimeType: 'video/mp4' };
-    }
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options = { mimeType: 'video/webm;codecs=vp9' };
-    }
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options = { mimeType: 'video/webm' };
-    }
-
-    setVideoExt(options.mimeType.includes('mp4') ? 'mp4' : 'webm');
-
-    const mediaRecorder = new MediaRecorder(stream, options);
-    mediaRecorderRef.current = mediaRecorder;
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunksRef.current.push(e.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      // Stop audio
-      try { audioSourceRef.current?.stop(); } catch (_) {}
-      try { audioContextRef.current?.close(); } catch (_) {}
-      audioSourceRef.current = null;
-      audioContextRef.current = null;
-
-      const blob = new Blob(chunksRef.current, { type: options.mimeType });
-      const url = URL.createObjectURL(blob);
-      setVideoUrl(url);
-      setIsRecording(false);
-    };
-
-    mediaRecorder.start();
-
-    // Animation variables
-    const qWords = format === 'chatgpt' ? question.split(/\s+/).filter(w => w.trim() !== '') : term.split(/\s+/).filter(w => w.trim() !== '');
-    const aWords = format === 'chatgpt' ? answer.split(/\s+/).filter(w => w.trim() !== '') : translation.split(/\s+/).filter(w => w.trim() !== '');
-    
-    const qTypingTime = qWords.length * msPerWord;
-    const aTypingTime = aWords.length * msPerWord;
-    const totalDuration = format === 'chatgpt' 
-      ? qTypingTime + preSendPause + slideTime + preAnswerPause + aTypingTime + 2000
-      : qTypingTime + preSendPause + aTypingTime + 2000;
-    
-    let startTime: number | null = null;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const elapsed = timestamp - startTime;
-
-      if (format === 'chatgpt') {
-        drawChatGPTFrame(ctx, elapsed, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
-      } else {
-        drawTranslatorFrame(ctx, elapsed, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
-      }
-
-      if (elapsed < totalDuration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        if (mediaRecorderRef.current?.state === 'recording') {
-          mediaRecorderRef.current.stop();
+      if (audioBufferRef.current) {
+        try {
+          const audioCtx = new AudioContext();
+          audioContextRef.current = audioCtx;
+          const source = audioCtx.createBufferSource();
+          source.buffer = audioBufferRef.current;
+          source.loop = true;
+          audioSourceRef.current = source;
+          const dest = audioCtx.createMediaStreamDestination();
+          source.connect(dest);
+          dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+          source.start(0);
+        } catch (e) {
+          console.warn('Audio mix failed, recording without audio:', e);
         }
       }
-    };
 
-    animationFrameRef.current = requestAnimationFrame(animate);
+      let options = { mimeType: 'video/mp4;codecs=avc1' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: 'video/mp4' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: 'video/webm;codecs=vp9' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) options = { mimeType: 'video/webm' };
+
+      setVideoExt(options.mimeType.includes('mp4') ? 'mp4' : 'webm');
+
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        try { audioSourceRef.current?.stop(); } catch (_) {}
+        try { audioContextRef.current?.close(); } catch (_) {}
+        audioSourceRef.current = null;
+        audioContextRef.current = null;
+
+        const blob = new Blob(chunksRef.current, { type: options.mimeType });
+        const url = URL.createObjectURL(blob);
+        setVideoUrl(url);
+        setIsRecording(false);
+        resolve(url);
+      };
+
+      mediaRecorder.start();
+
+      const qWords = format === 'chatgpt' ? question.split(/\s+/).filter(w => w.trim() !== '') : term.split(/\s+/).filter(w => w.trim() !== '');
+      const aWords = format === 'chatgpt' ? answer.split(/\s+/).filter(w => w.trim() !== '') : translation.split(/\s+/).filter(w => w.trim() !== '');
+      const qTypingTime = qWords.length * msPerWord;
+      const aTypingTime = aWords.length * msPerWord;
+      const totalDuration = format === 'chatgpt'
+        ? qTypingTime + preSendPause + slideTime + preAnswerPause + aTypingTime + 2000
+        : qTypingTime + preSendPause + aTypingTime + 2000;
+
+      let startTime: number | null = null;
+      const animate = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        if (format === 'chatgpt') {
+          drawChatGPTFrame(ctx, elapsed, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
+        } else {
+          drawTranslatorFrame(ctx, elapsed, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
+        }
+        if (elapsed < totalDuration) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } else {
+          if (mediaRecorderRef.current?.state === 'recording') {
+            mediaRecorderRef.current.stop();
+          }
+        }
+      };
+      animationFrameRef.current = requestAnimationFrame(animate);
+    });
   };
 
-  const stopRecording = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    try { audioSourceRef.current?.stop(); } catch (_) {}
-    try { audioContextRef.current?.close(); } catch (_) {}
-    audioSourceRef.current = null;
-    audioContextRef.current = null;
-    if (mediaRecorderRef.current?.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    setIsRecording(false);
-  };
-
-  const postToInstagram = async () => {
-    if (!videoUrl) return;
+  const postToInstagram = async (urlToPost: string) => {
     setIsPosting(true);
     setPostStatus('uploading');
     setPostError(null);
-    setPostLogs([]);
 
     try {
       // Step 1: Fetch blob from object URL
       addLog('STEP 1 — Fetching video blob from canvas recording...');
-      const videoRes = await fetch(videoUrl);
+      const videoRes = await fetch(urlToPost);
       const videoBlob = await videoRes.blob();
       const fileSizeMB = (videoBlob.size / 1024 / 1024).toFixed(2);
       addLog(`✓ Blob fetched — size: ${fileSizeMB}MB, type: ${videoBlob.type}`);
@@ -916,6 +895,46 @@ export default function ReelGenerator() {
     } finally {
       setIsPosting(false);
     }
+  };
+
+  const handleUpload = async () => {
+    setPostError(null);
+    setPostLogs([]);
+    let url = videoUrl;
+    if (!url) {
+      setPostStatus('recording');
+      addLog('STEP 0 — Recording animation...');
+      try {
+        url = await recordVideo();
+        addLog('✓ Recording complete');
+      } catch (e: any) {
+        setPostStatus('error');
+        setPostError('Recording failed: ' + (e?.message || 'Unknown error'));
+        addLog(`✗ Recording failed: ${e?.message || 'Unknown error'}`);
+        return;
+      }
+    }
+    await postToInstagram(url);
+  };
+
+  const handleDownload = async () => {
+    let url = videoUrl;
+    if (!url) {
+      setIsDownloading(true);
+      try {
+        url = await recordVideo();
+      } catch (_) {
+        setIsDownloading(false);
+        return;
+      }
+      setIsDownloading(false);
+    }
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${format}_${getFormattedDate()}.${videoExt}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // Draw initial state
@@ -1101,66 +1120,47 @@ export default function ReelGenerator() {
         </div>
 
         <div className="pt-4 flex flex-col sm:flex-row gap-4">
-          {!isRecording ? (
-            <button 
-              onClick={startRecording}
-              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-6 rounded-xl font-medium transition-colors shadow-lg shadow-emerald-900/20"
+          <button
+            onClick={handleDownload}
+            disabled={isRecording || isPosting || postStatus === 'publishing'}
+            className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 disabled:opacity-50 text-black py-3 px-6 rounded-xl font-medium transition-colors shadow-lg shadow-white/5"
+          >
+            <Download className="w-5 h-5" />
+            {isDownloading ? 'Recording...' : `Download Video (.${videoExt})`}
+          </button>
+
+          {postStatus === 'done' ? (
+            <a
+              href="https://www.instagram.com/corporategpt_unfilter/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-medium rounded-xl text-sm transition-all"
             >
-              <Play className="w-5 h-5" />
-              Play & Record
-            </button>
+              <Instagram className="w-4 h-4" />
+              Check Instagram ↗
+            </a>
           ) : (
-            <button 
-              onClick={stopRecording}
-              className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white py-3 px-6 rounded-xl font-medium transition-colors animate-pulse shadow-lg shadow-red-900/20"
+            <button
+              onClick={handleUpload}
+              disabled={isRecording || isPosting || postStatus === 'publishing'}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-all"
             >
-              <Square className="w-5 h-5 fill-current" />
-              Stop Recording
+              <Instagram className="w-4 h-4" />
+              {postStatus === 'recording' ? 'Recording...' :
+               postStatus === 'uploading' ? 'Uploading to cloud...' :
+               postStatus === 'posting' ? 'Sending to Make.com...' :
+               postStatus === 'publishing' ? `Publishing... ${publishingSecsLeft}s` :
+               postStatus === 'error' ? 'Failed — retry' :
+               'Upload to Instagram'}
             </button>
           )}
 
-          {videoUrl && !isRecording && (
-            <>
-              <a
-                href={videoUrl}
-                download={`${format}_${getFormattedDate()}.${videoExt}`}
-                className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black py-3 px-6 rounded-xl font-medium transition-colors shadow-lg shadow-white/5"
-              >
-                <Download className="w-5 h-5" />
-                Download Video (.{videoExt})
-              </a>
-              {postStatus === 'done' ? (
-                <a
-                  href="https://www.instagram.com/corporategpt_unfilter/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-medium rounded-xl text-sm transition-all"
-                >
-                  <Instagram className="w-4 h-4" />
-                  Check Instagram ↗
-                </a>
-              ) : (
-                <button
-                  onClick={postToInstagram}
-                  disabled={!videoUrl || isPosting || postStatus === 'publishing'}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-all"
-                >
-                  <Instagram className="w-4 h-4" />
-                  {postStatus === 'uploading' ? 'Uploading to cloud...' :
-                   postStatus === 'posting' ? 'Sending to Make.com...' :
-                   postStatus === 'publishing' ? `Publishing... ${publishingSecsLeft}s` :
-                   postStatus === 'error' ? 'Failed — retry' :
-                   'Upload to Instagram'}
-                </button>
-              )}
-              <button
-                onClick={resetAll}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-neutral-700 hover:bg-neutral-600 text-white font-medium rounded-xl text-sm transition-colors"
-              >
-                Reset
-              </button>
-            </>
-          )}
+          <button
+            onClick={resetAll}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-neutral-700 hover:bg-neutral-600 text-white font-medium rounded-xl text-sm transition-colors"
+          >
+            Reset
+          </button>
         </div>
 
         {postError && (
