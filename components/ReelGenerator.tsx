@@ -152,18 +152,26 @@ export default function ReelGenerator() {
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
       let prompt = "";
       
+      const topicLine = customPrompt
+        ? `TOPIC: "${customPrompt}" — the content MUST directly reference this specific topic/movie/show/trend. Don't be generic.`
+        : "TOPIC: General Indian corporate life.";
+
+      const indianLine = useTrendingIndia
+        ? "Style: Indian corporate humor — use desi slang, relatable Indian office culture, and tie everything specifically to the TOPIC above."
+        : "";
+
       if (format === 'chatgpt') {
-        prompt = `Generate content for a corporate humor Instagram Reel. 
-        Direction/Topic: ${customPrompt || "General corporate life"}.
-        ${useTrendingIndia ? "CRITICAL: Use Indian corporate cultural nuances, slang, and currently trending topics in India." : ""}
-        
-        Provide:
-        1. topText: A short, catchy top margin text (e.g., "Wait for it...", "Manager logic 🤯").
-        2. question: A short, relatable question an employee might ask ChatGPT. Keep it under 10 words and use very easy, everyday language.
-        3. answer: A brutally honest, sarcastic, or funny "unfiltered" answer. Keep it very short (1-2 sentences) and use simple, easy-to-understand language so viewers relate instantly.
-        4. caption: Exactly 5 best hashtags, separated by spaces. No other text.
-        
-        Format exactly as JSON:
+        prompt = `You are writing content for a corporate humor Instagram Reel (@corporategpt_unfilter).
+        ${topicLine}
+        ${indianLine}
+
+        Generate:
+        1. topText: A short hook for the top of the screen (e.g., "Wait for it... 🤯", "Every Indian office rn 💀"). Reference the TOPIC if possible.
+        2. question: A short question someone might ask ChatGPT, under 10 words, very simple everyday language. Must connect to the TOPIC.
+        3. answer: A brutally honest, sarcastic, funny "unfiltered" answer. 1-2 short sentences. Simple language. Must land the joke about the TOPIC.
+        4. caption: Exactly 5 relevant hashtags separated by spaces. No other text.
+
+        Respond with ONLY valid JSON, nothing else:
         {
           "topText": "...",
           "question": "...",
@@ -171,18 +179,18 @@ export default function ReelGenerator() {
           "caption": "..."
         }`;
       } else {
-        prompt = `Generate content for a corporate humor Instagram Reel.
-        Direction/Topic: ${customPrompt || "General corporate life"}.
-        ${useTrendingIndia ? "CRITICAL: Use Indian corporate cultural nuances and slang." : ""}
-        Tone: Cynical, anti-corporate, "deeply internal".
-        
-        Provide:
-        1. topText: A short, catchy top margin text.
-        2. term: A corporate buzzword or phrase.
-        3. translation: Its cynical, anti-corporate "unfiltered" translation. Keep it short and use easy, simple language.
-        4. caption: Exactly 5 best hashtags, separated by spaces. No other text.
-        
-        Format exactly as JSON:
+        prompt = `You are writing content for a corporate humor Instagram Reel (@corporategpt_unfilter).
+        ${topicLine}
+        ${indianLine}
+        Tone: Cynical, anti-corporate, darkly funny.
+
+        Generate:
+        1. topText: A short hook for the top of the screen. Reference the TOPIC if possible.
+        2. term: A corporate buzzword or phrase that connects to the TOPIC.
+        3. translation: Its cynical "unfiltered" translation. Short, simple, lands the joke about the TOPIC.
+        4. caption: Exactly 5 relevant hashtags separated by spaces. No other text.
+
+        Respond with ONLY valid JSON, nothing else:
         {
           "topText": "...",
           "term": "...",
@@ -190,15 +198,12 @@ export default function ReelGenerator() {
           "caption": "..."
         }`;
       }
-      
+
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
-          // googleSearch grounding is incompatible with responseMimeType:json,
-          // so only set it when not using search
-          responseMimeType: useTrendingIndia ? undefined : "application/json",
-          tools: useTrendingIndia ? [{ googleSearch: {} }] : undefined
+          responseMimeType: "application/json",
         }
       });
 
@@ -207,11 +212,7 @@ export default function ReelGenerator() {
       }
 
       if (response.text) {
-        // When googleSearch is used, response is plain text — extract the JSON block
-        const raw = response.text;
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("No JSON found in response");
-        const data = JSON.parse(jsonMatch[0]);
+        const data = JSON.parse(response.text);
         if (data.topText) setTopText(data.topText);
         if (data.caption) setCaption(data.caption);
         if (format === 'chatgpt') {
