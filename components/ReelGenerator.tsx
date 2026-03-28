@@ -28,7 +28,9 @@ export default function ReelGenerator() {
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-  const [postStatus, setPostStatus] = useState<'idle' | 'uploading' | 'posting' | 'done' | 'error'>('idle');
+  const [postStatus, setPostStatus] = useState<'idle' | 'uploading' | 'posting' | 'publishing' | 'done' | 'error'>('idle');
+  const [publishingSecsLeft, setPublishingSecsLeft] = useState(0);
+  const publishingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [postError, setPostError] = useState<string | null>(null);
   const [postLogs, setPostLogs] = useState<string[]>([]);
   const [logsCopied, setLogsCopied] = useState(false);
@@ -876,13 +878,28 @@ export default function ReelGenerator() {
         throw new Error(`[Step 3 — Make.com] ${postData.error || `HTTP ${postRes.status}`} — Make body: "${postData.makeBody}"`);
       }
 
-      addLog('✓ Make.com accepted the request');
-      addLog('DONE — Instagram should post within ~1 minute');
-      setPostStatus('done');
+      addLog('✓ Make.com accepted the request — handing off to Instagram...');
+      addLog('Publishing to Instagram (this takes 30–90 seconds)...');
       setPostError(null);
-      setTimeout(() => setPostStatus('idle'), 5000);
+
+      // Start publishing countdown
+      const PUBLISH_SECS = 75;
+      setPublishingSecsLeft(PUBLISH_SECS);
+      setPostStatus('publishing');
+
+      let secsLeft = PUBLISH_SECS;
+      publishingTimerRef.current = setInterval(() => {
+        secsLeft -= 1;
+        setPublishingSecsLeft(secsLeft);
+        if (secsLeft <= 0) {
+          if (publishingTimerRef.current) clearInterval(publishingTimerRef.current);
+          addLog('✓ Publishing window complete — check Instagram now');
+          setPostStatus('done');
+        }
+      }, 1000);
     } catch (e: any) {
       console.error(e);
+      if (publishingTimerRef.current) clearInterval(publishingTimerRef.current);
       setPostStatus('error');
       setPostError(e?.message || 'Unknown error — check logs below');
       addLog(`✗ ERROR: ${e?.message || 'Unknown error'}`);
@@ -1102,18 +1119,30 @@ export default function ReelGenerator() {
                 <Download className="w-5 h-5" />
                 Download Video (.{videoExt})
               </a>
-              <button
-                onClick={postToInstagram}
-                disabled={!videoUrl || isPosting}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-40 text-white font-medium rounded-lg text-sm transition-all"
-              >
-                <Instagram className="w-4 h-4" />
-                {postStatus === 'uploading' ? 'Uploading...' :
-                 postStatus === 'posting' ? 'Posting...' :
-                 postStatus === 'done' ? 'Posted! ✓' :
-                 postStatus === 'error' ? 'Failed — retry' :
-                 'Post to Instagram'}
-              </button>
+              {postStatus === 'done' ? (
+                <a
+                  href="https://www.instagram.com/corporategpt_unfilter/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-medium rounded-lg text-sm transition-all"
+                >
+                  <Instagram className="w-4 h-4" />
+                  Check Instagram ↗
+                </a>
+              ) : (
+                <button
+                  onClick={postToInstagram}
+                  disabled={!videoUrl || isPosting || postStatus === 'publishing'}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-60 text-white font-medium rounded-lg text-sm transition-all"
+                >
+                  <Instagram className="w-4 h-4" />
+                  {postStatus === 'uploading' ? 'Uploading to cloud...' :
+                   postStatus === 'posting' ? 'Sending to Make.com...' :
+                   postStatus === 'publishing' ? `Publishing... ${publishingSecsLeft}s` :
+                   postStatus === 'error' ? 'Failed — retry' :
+                   'Post to Instagram'}
+                </button>
+              )}
             </>
           )}
         </div>
