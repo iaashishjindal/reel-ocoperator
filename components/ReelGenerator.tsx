@@ -195,17 +195,23 @@ export default function ReelGenerator() {
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
-          responseMimeType: "application/json",
+          // googleSearch grounding is incompatible with responseMimeType:json,
+          // so only set it when not using search
+          responseMimeType: useTrendingIndia ? undefined : "application/json",
           tools: useTrendingIndia ? [{ googleSearch: {} }] : undefined
         }
       });
-      
+
       if (response.usageMetadata) {
         updateUsage(response.usageMetadata);
       }
-      
+
       if (response.text) {
-        const data = JSON.parse(response.text);
+        // When googleSearch is used, response is plain text — extract the JSON block
+        const raw = response.text;
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON found in response");
+        const data = JSON.parse(jsonMatch[0]);
         if (data.topText) setTopText(data.topText);
         if (data.caption) setCaption(data.caption);
         if (format === 'chatgpt') {
@@ -216,8 +222,9 @@ export default function ReelGenerator() {
           if (data.translation) setTranslation(data.translation);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating template:", error);
+      alert(`Generate failed: ${error?.message || error}`);
     } finally {
       setIsGeneratingQA(false);
       setIsGeneratingAnswer(false);
