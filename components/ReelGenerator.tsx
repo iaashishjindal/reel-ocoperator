@@ -40,6 +40,16 @@ export default function ReelGenerator() {
     setPostLogs(prev => [...prev, `[${ts}] ${msg}`]);
   };
 
+  const resetAll = () => {
+    if (publishingTimerRef.current) clearInterval(publishingTimerRef.current);
+    setVideoUrl(null);
+    setPostStatus('idle');
+    setPostError(null);
+    setPostLogs([]);
+    setIsPosting(false);
+    setPublishingSecsLeft(0);
+  };
+
   const [usageCost, setUsageCost] = useState(0);
   const [resetDate, setResetDate] = useState('');
 
@@ -1111,7 +1121,7 @@ export default function ReelGenerator() {
 
           {videoUrl && !isRecording && (
             <>
-              <a 
+              <a
                 href={videoUrl}
                 download={`${format}_${getFormattedDate()}.${videoExt}`}
                 className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-neutral-200 text-black py-3 px-6 rounded-xl font-medium transition-colors shadow-lg shadow-white/5"
@@ -1124,7 +1134,7 @@ export default function ReelGenerator() {
                   href="https://www.instagram.com/corporategpt_unfilter/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-medium rounded-lg text-sm transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-medium rounded-xl text-sm transition-all"
                 >
                   <Instagram className="w-4 h-4" />
                   Check Instagram ↗
@@ -1133,16 +1143,22 @@ export default function ReelGenerator() {
                 <button
                   onClick={postToInstagram}
                   disabled={!videoUrl || isPosting || postStatus === 'publishing'}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-60 text-white font-medium rounded-lg text-sm transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-all"
                 >
                   <Instagram className="w-4 h-4" />
                   {postStatus === 'uploading' ? 'Uploading to cloud...' :
                    postStatus === 'posting' ? 'Sending to Make.com...' :
                    postStatus === 'publishing' ? `Publishing... ${publishingSecsLeft}s` :
                    postStatus === 'error' ? 'Failed — retry' :
-                   'Post to Instagram'}
+                   'Upload to Instagram'}
                 </button>
               )}
+              <button
+                onClick={resetAll}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-neutral-700 hover:bg-neutral-600 text-white font-medium rounded-xl text-sm transition-colors"
+              >
+                Reset
+              </button>
             </>
           )}
         </div>
