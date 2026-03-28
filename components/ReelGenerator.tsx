@@ -30,6 +30,13 @@ export default function ReelGenerator() {
   const [isPosting, setIsPosting] = useState(false);
   const [postStatus, setPostStatus] = useState<'idle' | 'uploading' | 'posting' | 'done' | 'error'>('idle');
   const [postError, setPostError] = useState<string | null>(null);
+  const [postLogs, setPostLogs] = useState<string[]>([]);
+  const [logsCopied, setLogsCopied] = useState(false);
+
+  const addLog = (msg: string) => {
+    const ts = new Date().toISOString().split('T')[1].replace('Z', '');
+    setPostLogs(prev => [...prev, `[${ts}] ${msg}`]);
+  };
 
   const [usageCost, setUsageCost] = useState(0);
   const [resetDate, setResetDate] = useState('');
@@ -779,42 +786,57 @@ export default function ReelGenerator() {
     setIsPosting(true);
     setPostStatus('uploading');
     setPostError(null);
+    setPostLogs([]);
+
     try {
-      // Fetch the blob from the object URL
+      // Step 1: Fetch blob from object URL
+      addLog('STEP 1 — Fetching video blob from canvas recording...');
       const videoRes = await fetch(videoUrl);
       const videoBlob = await videoRes.blob();
-      const fileSizeMB = (videoBlob.size / 1024 / 1024).toFixed(1);
+      const fileSizeMB = (videoBlob.size / 1024 / 1024).toFixed(2);
+      addLog(`✓ Blob fetched — size: ${fileSizeMB}MB, type: ${videoBlob.type}`);
 
-      // Upload to Cloudinary
+      // Step 2: Upload to Cloudinary
+      addLog('STEP 2 — Uploading to Cloudinary...');
       const formData = new FormData();
       formData.append('video', videoBlob, `reel-${getFormattedDate()}.mp4`);
       const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!uploadRes.ok) {
-        const body = await uploadRes.json().catch(() => ({}));
-        throw new Error(`[Step 1 — Upload] ${body.error || body.message || `HTTP ${uploadRes.status}`} (file size: ${fileSizeMB}MB)`);
-      }
-      const uploadData = await uploadRes.json();
-      if (!uploadData.url) throw new Error(`[Step 1 — Upload] No URL returned from Cloudinary. Response: ${JSON.stringify(uploadData)}`);
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      addLog(`  HTTP ${uploadRes.status} — response: ${JSON.stringify(uploadData)}`);
 
-      // Trigger Make.com → Instagram
+      if (!uploadRes.ok || !uploadData.url) {
+        throw new Error(`[Step 2 — Cloudinary Upload] ${uploadData.error || `HTTP ${uploadRes.status}`}`);
+      }
+      addLog(`✓ Uploaded — url: ${uploadData.url}`);
+      addLog(`  Format: ${uploadData.format}, Size on Cloudinary: ${uploadData.cloudinaryBytes ? (uploadData.cloudinaryBytes/1024/1024).toFixed(2)+'MB' : 'unknown'}, Duration: ${uploadData.durationMs}ms`);
+
+      // Step 3: Send to Make.com → Instagram
       setPostStatus('posting');
+      addLog('STEP 3 — Sending to Make.com webhook → Instagram...');
+      addLog(`  Payload: { videoUrl: "${uploadData.url}", caption: "${caption?.slice(0,60)}${caption?.length > 60 ? '...' : ''}" }`);
+
       const postRes = await fetch('/api/post-instagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoUrl: uploadData.url, caption }),
       });
+      const postData = await postRes.json().catch(() => ({}));
+      addLog(`  HTTP ${postRes.status} — Make.com status: ${postData.makeStatus}, body: "${postData.makeBody}", duration: ${postData.durationMs}ms`);
+
       if (!postRes.ok) {
-        const body = await postRes.json().catch(() => ({}));
-        throw new Error(`[Step 2 — Instagram] ${body.error || body.message || `HTTP ${postRes.status}`}`);
+        throw new Error(`[Step 3 — Make.com] ${postData.error || `HTTP ${postRes.status}`} — Make body: "${postData.makeBody}"`);
       }
 
+      addLog('✓ Make.com accepted the request');
+      addLog('DONE — Instagram should post within ~1 minute');
       setPostStatus('done');
       setPostError(null);
-      setTimeout(() => setPostStatus('idle'), 4000);
+      setTimeout(() => setPostStatus('idle'), 5000);
     } catch (e: any) {
       console.error(e);
       setPostStatus('error');
-      setPostError(e?.message || 'Unknown error — check browser console (F12)');
+      setPostError(e?.message || 'Unknown error — check logs below');
+      addLog(`✗ ERROR: ${e?.message || 'Unknown error'}`);
     } finally {
       setIsPosting(false);
     }
@@ -1051,6 +1073,34 @@ export default function ReelGenerator() {
           <div className="mt-3 p-3 bg-red-950 border border-red-500/50 rounded-lg">
             <p className="text-red-400 text-xs font-mono font-semibold mb-1">ERROR — screenshot this and share with Aashish</p>
             <p className="text-red-300 text-xs font-mono break-all">{postError}</p>
+          </div>
+        )}
+
+        {postLogs.length > 0 && (
+          <div className="mt-3 bg-neutral-900 border border-white/10 rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+              <span className="text-xs text-neutral-400 font-mono font-semibold">INSTAGRAM POST LOG</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(postLogs.join('\n'));
+                  setLogsCopied(true);
+                  setTimeout(() => setLogsCopied(false), 2000);
+                }}
+                className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-mono"
+              >
+                {logsCopied ? '✓ Copied!' : 'Copy all'}
+              </button>
+            </div>
+            <div className="p-3 space-y-1 max-h-48 overflow-y-auto">
+              {postLogs.map((log, i) => (
+                <p key={i} className={`text-xs font-mono break-all leading-relaxed ${
+                  log.includes('✓') ? 'text-emerald-400' :
+                  log.includes('✗') || log.includes('ERROR') ? 'text-red-400' :
+                  log.startsWith('[') && log.includes('STEP') ? 'text-yellow-400' :
+                  'text-neutral-400'
+                }`}>{log}</p>
+              ))}
+            </div>
           </div>
         )}
 

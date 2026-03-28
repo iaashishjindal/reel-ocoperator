@@ -8,6 +8,7 @@ cloudinary.config({
 });
 
 export async function POST(request: Request) {
+  const startTime = Date.now();
   try {
     const formData = await request.formData();
     const file = formData.get('video') as File;
@@ -16,10 +17,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No video file provided' }, { status: 400 });
     }
 
+    const fileSizeBytes = file.size;
+    const fileSizeMB = (fileSizeBytes / 1024 / 1024).toFixed(2);
+    const mimeType = file.type;
+
+    console.log(`[upload] Starting upload — size: ${fileSizeMB}MB, type: ${mimeType}`);
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const result = await new Promise<{ secure_url: string; public_id: string }>((resolve, reject) => {
+    const result = await new Promise<any>((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {
           resource_type: 'video',
@@ -28,15 +35,27 @@ export async function POST(request: Request) {
         },
         (error, result) => {
           if (error) reject(error);
-          else resolve(result as { secure_url: string; public_id: string });
+          else resolve(result);
         }
       ).end(buffer);
     });
 
-    return NextResponse.json({ url: result.secure_url, publicId: result.public_id });
+    const durationMs = Date.now() - startTime;
+    console.log(`[upload] Success — url: ${result.secure_url}, duration: ${durationMs}ms`);
+
+    return NextResponse.json({
+      url: result.secure_url,
+      publicId: result.public_id,
+      format: result.format,
+      fileSizeMB,
+      mimeType,
+      durationMs,
+      cloudinaryBytes: result.bytes,
+    });
   } catch (error: any) {
-    console.error('Upload error:', error);
+    const durationMs = Date.now() - startTime;
+    console.error('[upload] Error:', error);
     const message = error?.message || error?.error?.message || JSON.stringify(error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, durationMs }, { status: 500 });
   }
 }
