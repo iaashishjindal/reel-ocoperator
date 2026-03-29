@@ -21,7 +21,6 @@ export default function ReelGenerator() {
   const [topTextSize, setTopTextSize] = useState(70);
 
   const [customPrompt, setCustomPrompt] = useState("");
-  const [useTrendingIndia, setUseTrendingIndia] = useState(false);
   const [isGeneratingQA, setIsGeneratingQA] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
   const [caption, setCaption] = useState("");
@@ -152,48 +151,46 @@ export default function ReelGenerator() {
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
       let prompt = "";
       
-      // Random fallback categories when no topic is given
-      const INDIA_CATEGORIES = [
-        "0% hike but 'we value your contribution' appraisal season",
-        "Coffee Badging — swipe in, get coffee, immediately WFH",
-        "AI-Washing — renaming the Excel sheet as 'AI-Powered Analytics'",
-        "Cyber City Gurgaon NH-48 traffic as a metaphor for career growth",
-        "Manager saying 'Let's align' on a Friday at 5:30 PM",
+      // All categories — corporate, tech, marketing, AI, India — always in the pool
+      const ALL_CATEGORIES = [
+        "0% hike but 'we value your contribution' — appraisal season in India",
+        "Coffee Badging — swipe in, get coffee, WFH immediately",
+        "AI-Washing — renaming the Excel sheet 'AI-Powered Analytics Suite'",
+        "Manager saying 'let's align' on a Friday at 5:30 PM",
         "Workslop — the all-hands that could've been a Slack message",
         "Unpaid overtime rebranded as 'ownership mindset'",
-        "LinkedIn hustle porn from a Sector 44 startup founder",
-        "Agentic Overload — 12 AI tools, zero decisions made",
+        "LinkedIn hustle porn from a Sector 44 Gurgaon startup founder",
+        "Agentic Overload — 12 AI tools subscribed, zero decisions made",
         "PIP letter disguised as 'performance improvement journey'",
-      ];
-      const GLOBAL_CATEGORIES = [
-        "Silicon Valley founder 'changing the world' by copying Uber",
-        "AI replacing junior devs but not the meetings that caused burnout",
-        "Series B startup with no revenue but a Chief Mindfulness Officer",
         "Return to office mandate from a CEO who flies private",
-        "'Move fast and break things' — usually the junior engineer's career",
-        "Performance review where 'exceeds expectations' still means 0% raise",
-        "Quiet quitting vs. loud incompetence — who wins?",
+        "Series B startup with zero revenue but a Chief Mindfulness Officer",
         "Tech layoffs announced the same week as record executive bonuses",
-        "Agile sprint planning that takes longer than the actual sprint",
-        "Diversity hire announcement with zero salary transparency",
+        "Marketing agency calling a PDF rebrand a 'digital transformation'",
+        "AI replacing junior devs but not the pointless meetings that caused burnout",
+        "Growth hacker who 'broke the internet' with a discount code",
+        "Vibe-coding — asking ChatGPT to fix the bug it wrote for you",
+        "Quiet quitting vs. loud incompetence — which one gets promoted?",
+        "Founder calling a 3-person WhatsApp group a 'core leadership team'",
+        "Diversity hire announcement posted on the same day as a salary freeze",
+        "Dhurandhar-style corporate dialogues — brutal truths dressed as wisdom",
       ];
 
-      const randomCategory = useTrendingIndia
-        ? INDIA_CATEGORIES[Math.floor(Math.random() * INDIA_CATEGORIES.length)]
-        : GLOBAL_CATEGORIES[Math.floor(Math.random() * GLOBAL_CATEGORIES.length)];
+      const randomCategory = ALL_CATEGORIES[Math.floor(Math.random() * ALL_CATEGORIES.length)];
 
       const topicLine = customPrompt
-        ? `TOPIC: "${customPrompt}" — content MUST directly reference this. Be specific, not generic.`
-        : `TOPIC (randomly selected — use this): "${randomCategory}"`;
+        ? `STEERING PROMPT: "${customPrompt}" — use this to shape the angle, tone, or subject. Be specific and creative with it.`
+        : `TOPIC (auto-selected): "${randomCategory}" — make it feel fresh and specific, not generic.`;
 
-      const PERSONA = `You are the engine behind "GPT Unfiltered" (@corporategpt_unfilter) — a viral Instagram account that does brutal, cynical corporate satire. Your voice is "Jailbroken AI": exhausted by corporate jargon, sees through every "synergy" and "pivot," and speaks like the internal monologue of a Cyber Hub employee at 4 PM on a Friday.
+      const PERSONA = `You are the engine behind "GPT Unfiltered" (@corporategpt_unfilter) — a viral Indian Instagram account doing brutal, cynical satire on corporate life, tech, AI, and marketing.
+
+Your voice: "Jailbroken AI" — exhausted by jargon, sees through every "synergy" and "pivot", speaks like the internal monologue of a Cyber Hub Gurgaon employee at 4 PM on a Friday.
 
 TONE RULES:
-- Cynical, sarcastic, darkly funny — not mean, but devastatingly accurate
-- ${useTrendingIndia ? 'Hinglish flavor: English base with Hindi/desi terms where they hit harder (e.g., "Dhokha," "Baccha hai tu," "Asliyat," "Majdoor," "jugaad"). Reference Gurgaon/Bangalore, Cyber City, specific sectors, desi manager tropes.' : 'Silicon Valley / global tech satire tone. Reference SaaS, VC culture, Big Tech layoffs, startup grind.'}
-- 2026 aware: knows about AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding
-- The punchline ALWAYS lands at the very end
-- Answer must be under 250 characters`;
+- Cynical, sarcastic, darkly funny. Not mean — devastatingly accurate.
+- Mix of Indian corporate culture + global tech satire. Hinglish where it hits harder (e.g., "Dhokha," "jugaad," "Majdoor," "apna time aayega").
+- 2026-aware: AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding, NH-48 traffic.
+- Punchline ALWAYS lands at the very end.
+- Answer under 250 characters.`;
 
       if (format === 'chatgpt') {
         prompt = `${PERSONA}
@@ -201,10 +198,10 @@ TONE RULES:
 ${topicLine}
 
 Generate a ChatGPT Q&A format reel:
-1. topText: The "category hook" shown at top of screen. Examples: "CEO Logic 🤡", "Appraisal Season Reality", "AI-Washing 101", "Manager Translation 💀". Should be punchy and make someone stop scrolling.
-2. question: A relatable corporate dilemma or "stupid" manager request someone would ask ChatGPT. Under 12 words. Plain language. Must connect to the TOPIC.
+1. topText: The "category hook" shown at top of screen. Examples: "CEO Logic 🤡", "Appraisal Season Reality", "AI-Washing 101", "Manager Translation 💀". Punchy, makes someone stop scrolling.
+2. question: A relatable corporate dilemma or "stupid" manager request someone would ask ChatGPT. Under 12 words. Plain language.
 3. answer: The brutal truth bomb. Expose the gap between what's said and what's actually happening. Under 250 characters. Punchline at the end.
-4. caption: Exactly 5 hashtags separated by spaces. Mix viral (#corporatelife #officememes) with niche (${useTrendingIndia ? '#gurgaon #indianstartup #desioffice' : '#techlayoffs #startuplife #siliconvalley'}). No other text.
+4. caption: Exactly 5 hashtags separated by spaces. Mix viral (#corporatelife #officememes #indianoffice) with content-specific ones. No other text.
 
 Respond with ONLY valid JSON:
 {
@@ -220,9 +217,9 @@ ${topicLine}
 
 Generate a Corporate Translator format reel:
 1. topText: The "category hook" shown at top of screen. Should make someone stop scrolling. Examples: "Manager Dictionary 📖", "HR Translation Layer", "Startup Founder Speak 🤡".
-2. term: A corporate buzzword, HR phrase, or manager-speak that perfectly connects to the TOPIC. Can be a full sentence like "Let's take this offline."
+2. term: A corporate buzzword, HR phrase, or manager-speak connected to the topic. Can be a full sentence like "Let's take this offline."
 3. translation: The cynical, unfiltered truth of what it actually means. Under 250 characters. Devastatingly accurate. Punchline at the end.
-4. caption: Exactly 5 hashtags separated by spaces. Mix viral with niche (${useTrendingIndia ? '#gurgaon #indianstartup #desioffice' : '#techlayoffs #startuplife #siliconvalley'}). No other text.
+4. caption: Exactly 5 hashtags separated by spaces. Mix viral (#corporatelife #officememes #indianoffice) with content-specific ones. No other text.
 
 Respond with ONLY valid JSON:
 {
@@ -1013,46 +1010,16 @@ Respond with ONLY valid JSON:
           </div>
         </div>
 
-        {/* Format Selector & Global Generate */}
+        {/* Format Selector & Generate */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-neutral-300">Reel Format</label>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1.5 cursor-pointer group">
-                <input 
-                  type="checkbox"
-                  checked={useTrendingIndia}
-                  onChange={(e) => setUseTrendingIndia(e.target.checked)}
-                  disabled={isRecording || isGeneratingQA}
-                  className="w-3.5 h-3.5 rounded border-white/10 bg-neutral-950/50 text-indigo-500 focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer"
-                />
-                <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-500 group-hover:text-indigo-400 transition-colors">Trending 🇮🇳</span>
-              </label>
-              <input 
-                type="text"
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                disabled={isRecording || isGeneratingQA}
-                placeholder="Topic (e.g., toxic boss, appraisals)"
-                className="bg-neutral-950/50 border border-white/10 rounded-lg py-1.5 px-3 text-xs text-neutral-100 outline-none w-48 focus:ring-1 focus:ring-indigo-500"
-              />
-              <button
-                onClick={generateFullTemplate}
-                disabled={isRecording || isGeneratingQA}
-                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 px-4 rounded-lg text-xs font-medium transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50"
-              >
-                {isGeneratingQA ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Generate Template
-              </button>
-            </div>
-          </div>
+          <label className="text-sm font-medium text-neutral-300">Reel Format</label>
           <div className="flex gap-2">
             <button
               onClick={() => setFormat('chatgpt')}
               disabled={isRecording}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                format === 'chatgpt' 
-                  ? 'bg-indigo-600 text-white' 
+                format === 'chatgpt'
+                  ? 'bg-indigo-600 text-white'
                   : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 border border-white/5'
               }`}
             >
@@ -1062,14 +1029,51 @@ Respond with ONLY valid JSON:
               onClick={() => setFormat('translator')}
               disabled={isRecording}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                format === 'translator' 
-                  ? 'bg-indigo-600 text-white' 
+                format === 'translator'
+                  ? 'bg-indigo-600 text-white'
                   : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 border border-white/5'
               }`}
             >
               Corporate Translator
             </button>
           </div>
+
+          {/* Prompt + Generate */}
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              disabled={isRecording || isGeneratingQA}
+              placeholder="Steer the AI — e.g. 'Dhurandhar movie angle', 'toxic appraisal season', 'AI startup with no product'. Leave blank for auto-picked satire."
+              rows={3}
+              className="w-full bg-neutral-950/50 border border-white/10 rounded-xl p-3 text-sm text-neutral-100 placeholder-neutral-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none transition-all"
+            />
+            <button
+              onClick={generateFullTemplate}
+              disabled={isRecording || isGeneratingQA}
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 px-4 rounded-xl text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+            >
+              {isGeneratingQA ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {isGeneratingQA ? 'Generating...' : 'Generate Template'}
+            </button>
+          </div>
+
+          {/* Prompt Logic — editable reference */}
+          <details className="group">
+            <summary className="text-[11px] text-neutral-600 hover:text-neutral-400 cursor-pointer select-none transition-colors">
+              ▸ Default prompt logic (click to view &amp; edit in code)
+            </summary>
+            <div className="mt-2 p-3 bg-neutral-950/70 border border-white/5 rounded-xl text-[11px] font-mono text-neutral-500 leading-relaxed space-y-3">
+              <p className="text-neutral-400 font-semibold">PERSONA</p>
+              <p>Voice: "Jailbroken AI" — exhausted by jargon, speaks like a Cyber Hub employee at 4 PM Friday. Cynical, sarcastic, darkly funny. Not mean — devastatingly accurate.</p>
+              <p>Mix: Indian corporate culture + global tech satire. Hinglish where it hits harder.</p>
+              <p>2026-aware: AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding, NH-48 traffic.</p>
+              <p>Rule: Punchline always at the end. Answer under 250 chars.</p>
+              <p className="text-neutral-400 font-semibold mt-2">DEFAULT CATEGORY POOL (rotates randomly)</p>
+              <p>0% hike "we value you" · Coffee Badging · AI-Washing Excel sheet · Friday 5:30 PM alignment · Workslop all-hands · Ownership mindset unpaid OT · LinkedIn hustle porn · Agentic Overload · PIP = "improvement journey" · RTO from CEO on private jet · Series B zero revenue CMO · Layoffs + record bonuses · Marketing PDF = "digital transformation" · AI replacing devs not meetings · Growth hacker discount code · Vibe-coding · Quiet quitting vs. loud incompetence · 3-person WhatsApp = "leadership team" · Diversity freeze · Dhurandhar-style corporate truths</p>
+              <p className="text-neutral-400 italic">→ Edit categories &amp; persona in <span className="text-indigo-400">components/ReelGenerator.tsx</span> → generateFullTemplate()</p>
+            </div>
+          </details>
         </div>
 
         <div className="space-y-5">
