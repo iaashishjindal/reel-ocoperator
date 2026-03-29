@@ -1,11 +1,14 @@
 'use client';
 import ReelGenerator from '@/components/ReelGenerator';
 
-const BUILD_TIME = new Date().toLocaleString('en-IN', {
-  timeZone: 'Asia/Kolkata',
-  day: '2-digit', month: 'short', year: 'numeric',
-  hour: '2-digit', minute: '2-digit', hour12: false,
-});
+const raw = process.env.NEXT_PUBLIC_BUILD_TIME;
+const BUILD_TIME = raw
+  ? new Date(raw).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    })
+  : 'local dev';
 
 export default function Page() {
   return (

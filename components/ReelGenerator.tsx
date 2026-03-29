@@ -4,6 +4,40 @@ import { useState, useRef, useEffect } from 'react';
 import { Download, Loader2, Sparkles, Copy, Check, Instagram } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 
+// Baked at build time — use env var set during CI/deploy, fallback to build timestamp
+const BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString();
+
+const DEFAULT_PERSONA = `Voice: "Jailbroken AI" — exhausted by jargon, speaks like a Cyber Hub Gurgaon employee at 4 PM on a Friday.
+
+Tone: Cynical, sarcastic, darkly funny. Not mean — devastatingly accurate.
+Mix: Indian corporate culture + global tech satire. Hinglish where it hits harder (e.g., "Dhokha," "jugaad," "Majdoor," "apna time aayega").
+2026-aware: AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding, NH-48 traffic.
+Punchline ALWAYS lands at the very end.
+Answer under 250 characters.`;
+
+const DEFAULT_CATEGORIES = [
+  "0% hike but 'we value your contribution' — appraisal season in India",
+  "Coffee Badging — swipe in, get coffee, WFH immediately",
+  "AI-Washing — renaming the Excel sheet 'AI-Powered Analytics Suite'",
+  "Manager saying 'let's align' on a Friday at 5:30 PM",
+  "Workslop — the all-hands that could've been a Slack message",
+  "Unpaid overtime rebranded as 'ownership mindset'",
+  "LinkedIn hustle porn from a Sector 44 Gurgaon startup founder",
+  "Agentic Overload — 12 AI tools subscribed, zero decisions made",
+  "PIP letter disguised as 'performance improvement journey'",
+  "Return to office mandate from a CEO who flies private",
+  "Series B startup with zero revenue but a Chief Mindfulness Officer",
+  "Tech layoffs announced the same week as record executive bonuses",
+  "Marketing agency calling a PDF rebrand a 'digital transformation'",
+  "AI replacing junior devs but not the pointless meetings that caused burnout",
+  "Growth hacker who 'broke the internet' with a discount code",
+  "Vibe-coding — asking ChatGPT to fix the bug it wrote for you",
+  "Quiet quitting vs. loud incompetence — which one gets promoted?",
+  "Founder calling a 3-person WhatsApp group a 'core leadership team'",
+  "Diversity hire announcement posted on the same day as a salary freeze",
+  "Dhurandhar-style corporate dialogues — brutal truths dressed as wisdom",
+];
+
 export default function ReelGenerator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [format, setFormat] = useState<'chatgpt' | 'translator'>('chatgpt');
@@ -21,6 +55,12 @@ export default function ReelGenerator() {
   const [topTextSize, setTopTextSize] = useState(70);
 
   const [customPrompt, setCustomPrompt] = useState("");
+  const [savedPersona, setSavedPersona] = useState<string>(DEFAULT_PERSONA);
+  const [savedCategories, setSavedCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [draftPersona, setDraftPersona] = useState<string>(DEFAULT_PERSONA);
+  const [draftCategories, setDraftCategories] = useState<string>(DEFAULT_CATEGORIES.join('\n'));
+  const [promptLogicOpen, setPromptLogicOpen] = useState(false);
+  const [promptSaved, setPromptSaved] = useState(false);
   const [isGeneratingQA, setIsGeneratingQA] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
   const [caption, setCaption] = useState("");
@@ -68,6 +108,14 @@ export default function ReelGenerator() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
+
+  // Load saved prompt logic from localStorage on mount
+  useEffect(() => {
+    const p = localStorage.getItem('reel_persona');
+    const c = localStorage.getItem('reel_categories');
+    if (p) { setSavedPersona(p); setDraftPersona(p); }
+    if (c) { const arr = JSON.parse(c); setSavedCategories(arr); setDraftCategories(arr.join('\n')); }
+  }, []);
 
   // Pre-load the audio file on mount
   useEffect(() => {
@@ -151,46 +199,13 @@ export default function ReelGenerator() {
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
       let prompt = "";
       
-      // All categories — corporate, tech, marketing, AI, India — always in the pool
-      const ALL_CATEGORIES = [
-        "0% hike but 'we value your contribution' — appraisal season in India",
-        "Coffee Badging — swipe in, get coffee, WFH immediately",
-        "AI-Washing — renaming the Excel sheet 'AI-Powered Analytics Suite'",
-        "Manager saying 'let's align' on a Friday at 5:30 PM",
-        "Workslop — the all-hands that could've been a Slack message",
-        "Unpaid overtime rebranded as 'ownership mindset'",
-        "LinkedIn hustle porn from a Sector 44 Gurgaon startup founder",
-        "Agentic Overload — 12 AI tools subscribed, zero decisions made",
-        "PIP letter disguised as 'performance improvement journey'",
-        "Return to office mandate from a CEO who flies private",
-        "Series B startup with zero revenue but a Chief Mindfulness Officer",
-        "Tech layoffs announced the same week as record executive bonuses",
-        "Marketing agency calling a PDF rebrand a 'digital transformation'",
-        "AI replacing junior devs but not the pointless meetings that caused burnout",
-        "Growth hacker who 'broke the internet' with a discount code",
-        "Vibe-coding — asking ChatGPT to fix the bug it wrote for you",
-        "Quiet quitting vs. loud incompetence — which one gets promoted?",
-        "Founder calling a 3-person WhatsApp group a 'core leadership team'",
-        "Diversity hire announcement posted on the same day as a salary freeze",
-        "Dhurandhar-style corporate dialogues — brutal truths dressed as wisdom",
-      ];
-
-      const randomCategory = ALL_CATEGORIES[Math.floor(Math.random() * ALL_CATEGORIES.length)];
+      const randomCategory = savedCategories[Math.floor(Math.random() * savedCategories.length)];
 
       const topicLine = customPrompt
         ? `STEERING PROMPT: "${customPrompt}" — use this to shape the angle, tone, or subject. Be specific and creative with it.`
         : `TOPIC (auto-selected): "${randomCategory}" — make it feel fresh and specific, not generic.`;
 
-      const PERSONA = `You are the engine behind "GPT Unfiltered" (@corporategpt_unfilter) — a viral Indian Instagram account doing brutal, cynical satire on corporate life, tech, AI, and marketing.
-
-Your voice: "Jailbroken AI" — exhausted by jargon, sees through every "synergy" and "pivot", speaks like the internal monologue of a Cyber Hub Gurgaon employee at 4 PM on a Friday.
-
-TONE RULES:
-- Cynical, sarcastic, darkly funny. Not mean — devastatingly accurate.
-- Mix of Indian corporate culture + global tech satire. Hinglish where it hits harder (e.g., "Dhokha," "jugaad," "Majdoor," "apna time aayega").
-- 2026-aware: AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding, NH-48 traffic.
-- Punchline ALWAYS lands at the very end.
-- Answer under 250 characters.`;
+      const PERSONA = `You are the engine behind "GPT Unfiltered" (@corporategpt_unfilter) — a viral Indian Instagram account doing brutal, cynical satire on corporate life, tech, AI, and marketing.\n\n${savedPersona}`;
 
       if (format === 'chatgpt') {
         prompt = `${PERSONA}
@@ -230,13 +245,25 @@ Respond with ONLY valid JSON:
 }`;
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
+      // Retry up to 2 times on 503/overload
+      let response: any;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+          });
+          break;
+        } catch (e: any) {
+          const msg = e?.message || '';
+          if (attempt < 2 && (msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('high demand'))) {
+            await new Promise(r => setTimeout(r, 2000));
+            continue;
+          }
+          throw e;
         }
-      });
+      }
 
       if (response.usageMetadata) {
         updateUsage(response.usageMetadata);
@@ -998,18 +1025,6 @@ Respond with ONLY valid JSON:
       {/* Controls */}
       <div className="space-y-6 bg-neutral-900/50 p-6 rounded-2xl border border-white/10 shadow-xl">
         
-        {/* Cost Tracker */}
-        <div className="flex items-center justify-between bg-neutral-800/50 p-4 rounded-xl border border-white/5">
-          <div>
-            <p className="text-xs text-neutral-400 font-medium uppercase tracking-wider">Current Month Usage</p>
-            <p className="text-2xl font-bold text-emerald-400">₹{usageCost.toFixed(4)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-neutral-400 font-medium uppercase tracking-wider">Resets On</p>
-            <p className="text-sm font-medium text-neutral-200">{resetDate}</p>
-          </div>
-        </div>
-
         {/* Format Selector & Generate */}
         <div className="space-y-4">
           <label className="text-sm font-medium text-neutral-300">Reel Format</label>
@@ -1058,22 +1073,67 @@ Respond with ONLY valid JSON:
             </button>
           </div>
 
-          {/* Prompt Logic — editable reference */}
-          <details className="group">
-            <summary className="text-[11px] text-neutral-600 hover:text-neutral-400 cursor-pointer select-none transition-colors">
-              ▸ Default prompt logic (click to view &amp; edit in code)
-            </summary>
-            <div className="mt-2 p-3 bg-neutral-950/70 border border-white/5 rounded-xl text-[11px] font-mono text-neutral-500 leading-relaxed space-y-3">
-              <p className="text-neutral-400 font-semibold">PERSONA</p>
-              <p>Voice: "Jailbroken AI" — exhausted by jargon, speaks like a Cyber Hub employee at 4 PM Friday. Cynical, sarcastic, darkly funny. Not mean — devastatingly accurate.</p>
-              <p>Mix: Indian corporate culture + global tech satire. Hinglish where it hits harder.</p>
-              <p>2026-aware: AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding, NH-48 traffic.</p>
-              <p>Rule: Punchline always at the end. Answer under 250 chars.</p>
-              <p className="text-neutral-400 font-semibold mt-2">DEFAULT CATEGORY POOL (rotates randomly)</p>
-              <p>0% hike "we value you" · Coffee Badging · AI-Washing Excel sheet · Friday 5:30 PM alignment · Workslop all-hands · Ownership mindset unpaid OT · LinkedIn hustle porn · Agentic Overload · PIP = "improvement journey" · RTO from CEO on private jet · Series B zero revenue CMO · Layoffs + record bonuses · Marketing PDF = "digital transformation" · AI replacing devs not meetings · Growth hacker discount code · Vibe-coding · Quiet quitting vs. loud incompetence · 3-person WhatsApp = "leadership team" · Diversity freeze · Dhurandhar-style corporate truths</p>
-              <p className="text-neutral-400 italic">→ Edit categories &amp; persona in <span className="text-indigo-400">components/ReelGenerator.tsx</span> → generateFullTemplate()</p>
-            </div>
-          </details>
+          {/* Prompt Logic — editable & saveable */}
+          <div className="border border-white/5 rounded-xl overflow-hidden">
+            <button
+              onClick={() => {
+                setPromptLogicOpen(o => !o);
+                setDraftPersona(savedPersona);
+                setDraftCategories(savedCategories.join('\n'));
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 bg-neutral-900/50 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              <span>⚙ Prompt logic (tap to edit &amp; save)</span>
+              <span>{promptLogicOpen ? '▲' : '▼'}</span>
+            </button>
+            {promptLogicOpen && (
+              <div className="p-3 bg-neutral-950/70 space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Persona / Tone Rules</label>
+                  <textarea
+                    value={draftPersona}
+                    onChange={e => setDraftPersona(e.target.value)}
+                    rows={6}
+                    className="w-full bg-neutral-900 border border-white/10 rounded-lg p-2 text-[11px] font-mono text-neutral-300 outline-none resize-y focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Category Pool (one per line — picks randomly when no prompt given)</label>
+                  <textarea
+                    value={draftCategories}
+                    onChange={e => setDraftCategories(e.target.value)}
+                    rows={8}
+                    className="w-full bg-neutral-900 border border-white/10 rounded-lg p-2 text-[11px] font-mono text-neutral-300 outline-none resize-y focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const cats = draftCategories.split('\n').map(s => s.trim()).filter(Boolean);
+                      setSavedPersona(draftPersona);
+                      setSavedCategories(cats);
+                      localStorage.setItem('reel_persona', draftPersona);
+                      localStorage.setItem('reel_categories', JSON.stringify(cats));
+                      setPromptSaved(true);
+                      setTimeout(() => setPromptSaved(false), 2000);
+                    }}
+                    className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    {promptSaved ? '✓ Saved!' : 'Save to browser'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDraftPersona(DEFAULT_PERSONA);
+                      setDraftCategories(DEFAULT_CATEGORIES.join('\n'));
+                    }}
+                    className="py-1.5 px-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-xs rounded-lg transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-5">
