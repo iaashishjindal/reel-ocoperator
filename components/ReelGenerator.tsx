@@ -152,51 +152,85 @@ export default function ReelGenerator() {
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
       let prompt = "";
       
-      const topicLine = customPrompt
-        ? `TOPIC: "${customPrompt}" — the content MUST directly reference this specific topic/movie/show/trend. Don't be generic.`
-        : "TOPIC: General Indian corporate life.";
+      // Random fallback categories when no topic is given
+      const INDIA_CATEGORIES = [
+        "0% hike but 'we value your contribution' appraisal season",
+        "Coffee Badging — swipe in, get coffee, immediately WFH",
+        "AI-Washing — renaming the Excel sheet as 'AI-Powered Analytics'",
+        "Cyber City Gurgaon NH-48 traffic as a metaphor for career growth",
+        "Manager saying 'Let's align' on a Friday at 5:30 PM",
+        "Workslop — the all-hands that could've been a Slack message",
+        "Unpaid overtime rebranded as 'ownership mindset'",
+        "LinkedIn hustle porn from a Sector 44 startup founder",
+        "Agentic Overload — 12 AI tools, zero decisions made",
+        "PIP letter disguised as 'performance improvement journey'",
+      ];
+      const GLOBAL_CATEGORIES = [
+        "Silicon Valley founder 'changing the world' by copying Uber",
+        "AI replacing junior devs but not the meetings that caused burnout",
+        "Series B startup with no revenue but a Chief Mindfulness Officer",
+        "Return to office mandate from a CEO who flies private",
+        "'Move fast and break things' — usually the junior engineer's career",
+        "Performance review where 'exceeds expectations' still means 0% raise",
+        "Quiet quitting vs. loud incompetence — who wins?",
+        "Tech layoffs announced the same week as record executive bonuses",
+        "Agile sprint planning that takes longer than the actual sprint",
+        "Diversity hire announcement with zero salary transparency",
+      ];
 
-      const indianLine = useTrendingIndia
-        ? "Style: Indian corporate humor — use desi slang, relatable Indian office culture, and tie everything specifically to the TOPIC above."
-        : "";
+      const randomCategory = useTrendingIndia
+        ? INDIA_CATEGORIES[Math.floor(Math.random() * INDIA_CATEGORIES.length)]
+        : GLOBAL_CATEGORIES[Math.floor(Math.random() * GLOBAL_CATEGORIES.length)];
+
+      const topicLine = customPrompt
+        ? `TOPIC: "${customPrompt}" — content MUST directly reference this. Be specific, not generic.`
+        : `TOPIC (randomly selected — use this): "${randomCategory}"`;
+
+      const PERSONA = `You are the engine behind "GPT Unfiltered" (@corporategpt_unfilter) — a viral Instagram account that does brutal, cynical corporate satire. Your voice is "Jailbroken AI": exhausted by corporate jargon, sees through every "synergy" and "pivot," and speaks like the internal monologue of a Cyber Hub employee at 4 PM on a Friday.
+
+TONE RULES:
+- Cynical, sarcastic, darkly funny — not mean, but devastatingly accurate
+- ${useTrendingIndia ? 'Hinglish flavor: English base with Hindi/desi terms where they hit harder (e.g., "Dhokha," "Baccha hai tu," "Asliyat," "Majdoor," "jugaad"). Reference Gurgaon/Bangalore, Cyber City, specific sectors, desi manager tropes.' : 'Silicon Valley / global tech satire tone. Reference SaaS, VC culture, Big Tech layoffs, startup grind.'}
+- 2026 aware: knows about AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding
+- The punchline ALWAYS lands at the very end
+- Answer must be under 250 characters`;
 
       if (format === 'chatgpt') {
-        prompt = `You are writing content for a corporate humor Instagram Reel (@corporategpt_unfilter).
-        ${topicLine}
-        ${indianLine}
+        prompt = `${PERSONA}
 
-        Generate:
-        1. topText: A short hook for the top of the screen (e.g., "Wait for it... 🤯", "Every Indian office rn 💀"). Reference the TOPIC if possible.
-        2. question: A short question someone might ask ChatGPT, under 10 words, very simple everyday language. Must connect to the TOPIC.
-        3. answer: A brutally honest, sarcastic, funny "unfiltered" answer. 1-2 short sentences. Simple language. Must land the joke about the TOPIC.
-        4. caption: Exactly 5 relevant hashtags separated by spaces. No other text.
+${topicLine}
 
-        Respond with ONLY valid JSON, nothing else:
-        {
-          "topText": "...",
-          "question": "...",
-          "answer": "...",
-          "caption": "..."
-        }`;
+Generate a ChatGPT Q&A format reel:
+1. topText: The "category hook" shown at top of screen. Examples: "CEO Logic 🤡", "Appraisal Season Reality", "AI-Washing 101", "Manager Translation 💀". Should be punchy and make someone stop scrolling.
+2. question: A relatable corporate dilemma or "stupid" manager request someone would ask ChatGPT. Under 12 words. Plain language. Must connect to the TOPIC.
+3. answer: The brutal truth bomb. Expose the gap between what's said and what's actually happening. Under 250 characters. Punchline at the end.
+4. caption: Exactly 5 hashtags separated by spaces. Mix viral (#corporatelife #officememes) with niche (${useTrendingIndia ? '#gurgaon #indianstartup #desioffice' : '#techlayoffs #startuplife #siliconvalley'}). No other text.
+
+Respond with ONLY valid JSON:
+{
+  "topText": "...",
+  "question": "...",
+  "answer": "...",
+  "caption": "..."
+}`;
       } else {
-        prompt = `You are writing content for a corporate humor Instagram Reel (@corporategpt_unfilter).
-        ${topicLine}
-        ${indianLine}
-        Tone: Cynical, anti-corporate, darkly funny.
+        prompt = `${PERSONA}
 
-        Generate:
-        1. topText: A short hook for the top of the screen. Reference the TOPIC if possible.
-        2. term: A corporate buzzword or phrase that connects to the TOPIC.
-        3. translation: Its cynical "unfiltered" translation. Short, simple, lands the joke about the TOPIC.
-        4. caption: Exactly 5 relevant hashtags separated by spaces. No other text.
+${topicLine}
 
-        Respond with ONLY valid JSON, nothing else:
-        {
-          "topText": "...",
-          "term": "...",
-          "translation": "...",
-          "caption": "..."
-        }`;
+Generate a Corporate Translator format reel:
+1. topText: The "category hook" shown at top of screen. Should make someone stop scrolling. Examples: "Manager Dictionary 📖", "HR Translation Layer", "Startup Founder Speak 🤡".
+2. term: A corporate buzzword, HR phrase, or manager-speak that perfectly connects to the TOPIC. Can be a full sentence like "Let's take this offline."
+3. translation: The cynical, unfiltered truth of what it actually means. Under 250 characters. Devastatingly accurate. Punchline at the end.
+4. caption: Exactly 5 hashtags separated by spaces. Mix viral with niche (${useTrendingIndia ? '#gurgaon #indianstartup #desioffice' : '#techlayoffs #startuplife #siliconvalley'}). No other text.
+
+Respond with ONLY valid JSON:
+{
+  "topText": "...",
+  "term": "...",
+  "translation": "...",
+  "caption": "..."
+}`;
       }
 
       const response = await ai.models.generateContent({
