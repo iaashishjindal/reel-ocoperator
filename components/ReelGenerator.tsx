@@ -7,35 +7,80 @@ import { GoogleGenAI } from '@google/genai';
 // Baked at build time — use env var set during CI/deploy, fallback to build timestamp
 const BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString();
 
-const DEFAULT_PERSONA = `Voice: "Jailbroken AI" — exhausted by jargon, speaks like a Cyber Hub Gurgaon employee at 4 PM on a Friday.
+const DEFAULT_PERSONA = `Voice: Burned-out Indian corporate employee who has seen everything — IIT grad doing Excel at an MNC, B-school fresher realising "culture fit" means unpaid overtime, IT service engineer on call at 2 AM for a client who doesn't know what UTC is.
 
-Tone: Cynical, sarcastic, darkly funny. Not mean — devastatingly accurate.
-Mix: Indian corporate culture + global tech satire. Hinglish where it hits harder (e.g., "Dhokha," "jugaad," "Majdoor," "apna time aayega").
-2026-aware: AI-Washing, Coffee Badging, Workslop, Agentic Overload, vibe-coding, NH-48 traffic.
-Punchline ALWAYS lands at the very end.
-Answer under 250 characters.`;
+Tone: Cynical, viciously accurate, zero-filter. NOT mean — just states the obvious everyone is too scared to say. Punches at systems, not people.
+
+Style rules:
+- Hinglish where it hits harder: "bhai", "yaar", "seedha bol", "log kya kahenge", "package", "jugaad", "apna time aayega", "kya scene hai", "CTC vs in-hand", "variable component".
+- Specific > Generic: "7 LPA fresher" beats "underpaid employee". "Sector 44 Gurgaon startup" beats "startup".
+- Use real Indian pain points: EPFO, TDS, notice period, service bonds, appraisal bell curve, Diwali bonus that isn't a bonus.
+- Reference the Indian audience's world: UPSC droppers pivoting to product management, "parents mein engineer chahiye tha", Shark Tank India cringe, LinkedIn India hustle bros, MBA from tier-3 college calling themselves "thought leaders".
+- 2026 specifics: AI-washing, vibe-coding, layoffs at profitable companies, "agentic workflows" nobody understands, RTO mandates from CEOs who expense WeWork.
+- Punchline MUST land at the very end. Setup → escalation → gut-punch.
+- Answer/translation under 250 characters. Every word earns its place.`;
 
 const DEFAULT_CATEGORIES = [
-  "0% hike but 'we value your contribution' — appraisal season in India",
-  "Coffee Badging — swipe in, get coffee, WFH immediately",
-  "AI-Washing — renaming the Excel sheet 'AI-Powered Analytics Suite'",
-  "Manager saying 'let's align' on a Friday at 5:30 PM",
-  "Workslop — the all-hands that could've been a Slack message",
-  "Unpaid overtime rebranded as 'ownership mindset'",
-  "LinkedIn hustle porn from a Sector 44 Gurgaon startup founder",
-  "Agentic Overload — 12 AI tools subscribed, zero decisions made",
-  "PIP letter disguised as 'performance improvement journey'",
-  "Return to office mandate from a CEO who flies private",
-  "Series B startup with zero revenue but a Chief Mindfulness Officer",
-  "Tech layoffs announced the same week as record executive bonuses",
-  "Marketing agency calling a PDF rebrand a 'digital transformation'",
-  "AI replacing junior devs but not the pointless meetings that caused burnout",
-  "Growth hacker who 'broke the internet' with a discount code",
-  "Vibe-coding — asking ChatGPT to fix the bug it wrote for you",
-  "Quiet quitting vs. loud incompetence — which one gets promoted?",
-  "Founder calling a 3-person WhatsApp group a 'core leadership team'",
-  "Diversity hire announcement posted on the same day as a salary freeze",
-  "Dhurandhar-style corporate dialogues — brutal truths dressed as wisdom",
+  // Appraisal & Salary
+  "Bell curve appraisal — entire team performed well but someone has to get a 2",
+  "CTC of 12 LPA with 4 LPA variable that has never once been paid in full",
+  "Diwali 'bonus' that is exactly one month's salary rebranded as a gift",
+  "0% hike email that opens with 'In these challenging times, we are grateful for your resilience'",
+  "Offer letter says 8 LPA, in-hand is 47K — the magic of PF, gratuity, and 'flexi basket'",
+
+  // Toxic work culture
+  "Manager pings at 11 PM and adds 'no urgency, reply whenever' — it is urgent",
+  "Friday 5:30 PM 'quick sync' that is a 2-hour product roadmap review",
+  "Ownership mindset — company slang for doing your manager's job for free",
+  "Service bond of 2 years for a 3-day training that was a PowerPoint from 2019",
+  "Notice period negotiation: HR says 90 days, you say 30, you leave in 45 and everyone pretends it was planned",
+
+  // Startup & Founder cringe
+  "Bootstrapped founder on Shark Tank asking for 1 crore for 0.5% equity — the math is intentional",
+  "Series A startup with a Chief Happiness Officer and no health insurance",
+  "Founder LinkedIn post: 'Rejected 100 times, today we hit 1000 users' — users are his cousins",
+  "Equity ESOP pool that vests in 4 years at a company that pivots every 6 months",
+  "Startup calling 60-hour weeks 'founder mentality' in the JD for a 3 LPA internship",
+
+  // Indian office specifics
+  "Coffee Badging — swipe in, photograph the office for LinkedIn, WFH by 10 AM",
+  "IT service company billing 40 USD per hour to the client, paying the developer 6 LPA",
+  "EPFO claim rejected for the 4th time for a document nobody told you was needed",
+  "Cab policy changed: now reimbursable only after 9 PM, meeting ends at 8:58 PM",
+  "Team outing to celebrate a product launch that was 6 months late and half the features were cut",
+
+  // AI & Tech satire
+  "AI-Washing — product manager added 'GenAI-powered' to the Jira ticket description",
+  "Vibe-coding — the junior dev used ChatGPT to write the bug and ChatGPT to fix the bug",
+  "Company deployed 14 AI tools this quarter, the intern still does the PDF formatting",
+  "Agentic workflow demo that is just a Python script with three if-else conditions",
+  "RTO mandate email written entirely by AI, sent by a CEO who has not been to office since 2021",
+
+  // LinkedIn & Hustle culture
+  "LinkedIn post: '6 months ago I had nothing. Today our ARR is 12 lakhs.' That is a salary.",
+  "Thought leader with 200K followers and a Substack who has never shipped a product",
+  "Hustle porn bro selling a productivity course while his startup is on life support",
+  "IIT IIM tag on LinkedIn bio of someone who left in semester 3 — still counts apparently",
+  "Networking event where everyone is selling something to everyone else who is also selling something",
+
+  // Layoffs & job market
+  "Company announces record profits and 300 layoffs in the same investor update",
+  "PIP letter delivered on a Friday before a long weekend — HR classic",
+  "Laid off with 'restructuring due to macroeconomic headwinds' after working unpaid overtime for a year",
+  "Job posting: 5 years experience in a tool that is 3 years old, salary 4-6 LPA",
+  "Returning from maternity leave to find your project was given to someone else while you were 'away'",
+
+  // WFH vs RTO
+  "Return to office for 'collaboration and culture' — open floor plan, no assigned desks, 100 people on calls",
+  "Hybrid policy: 3 days in office, all meetings still on Zoom because everyone is in different cities",
+  "Productivity monitoring software installed on WFH laptops — tracks keystrokes, not outcomes",
+  "Office move to a cheaper suburb framed as 'exciting new campus with modern amenities'",
+
+  // HR & corporate language
+  "HR saying 'we are a family' — families do not have NDAs and performance improvement plans",
+  "Diversity and inclusion initiative launched the same week as a hiring freeze for junior roles",
+  "Annual engagement survey results: 'Employees feel heard.' No changes made. See you next year.",
+  "Culture deck with 12 slides on values, zero slides on leave policy or salary bands",
 ];
 
 export default function ReelGenerator() {
@@ -212,13 +257,17 @@ export default function ReelGenerator() {
 
 ${topicLine}
 
-Generate a ChatGPT Q&A format reel:
-1. topText: The "category hook" shown at top of screen. Examples: "CEO Logic 🤡", "Appraisal Season Reality", "AI-Washing 101", "Manager Translation 💀". Punchy, makes someone stop scrolling.
-2. question: A relatable corporate dilemma or "stupid" manager request someone would ask ChatGPT. Under 12 words. Plain language.
-3. answer: The brutal truth bomb. Expose the gap between what's said and what's actually happening. Under 250 characters. Punchline at the end.
-4. caption: Exactly 5 hashtags separated by spaces. Mix viral (#corporatelife #officememes #indianoffice) with content-specific ones. No other text.
+Generate a ChatGPT Q&A format reel for an Indian audience. Rules:
 
-Respond with ONLY valid JSON:
+1. topText — the scroll-stopping category hook shown at the top of the screen. Must be so specific and relatable that an Indian corporate employee feels personally attacked. Use Hinglish, numbers, or a sharp label. Examples: "Appraisal Bell Curve 📉", "IT Service Company Math 🤡", "Startup Equity Reality", "HR Dictionary 💀", "Package vs In-Hand 😭". Max 6 words.
+
+2. question — what a burnt-out Indian employee would actually type into ChatGPT at 11 PM. Must feel like a real, specific dilemma — not generic. Reference actual Indian workplace pain: bell curves, variable pay, service bonds, manager politics, notice periods, LinkedIn pressure. Under 12 words. No corporate jargon in the question — use plain, desperate human language.
+
+3. answer — the unfiltered, viciously accurate truth that nobody in the office will say out loud. Structure: short setup → escalation → gut-punch punchline at the very end. Use Hinglish sparingly but precisely where it hits hardest. Name the specific absurdity. Under 250 characters.
+
+4. caption — exactly 5 hashtags, space-separated, zero other text. Mix high-volume Indian tags (#indiancorporate #officememes #indianstartup #9to5india #corporatelife) with 1-2 specific to the topic.
+
+Respond with ONLY valid JSON — no markdown, no explanation:
 {
   "topText": "...",
   "question": "...",
@@ -230,13 +279,17 @@ Respond with ONLY valid JSON:
 
 ${topicLine}
 
-Generate a Corporate Translator format reel:
-1. topText: The "category hook" shown at top of screen. Should make someone stop scrolling. Examples: "Manager Dictionary 📖", "HR Translation Layer", "Startup Founder Speak 🤡".
-2. term: A corporate buzzword, HR phrase, or manager-speak connected to the topic. Can be a full sentence like "Let's take this offline."
-3. translation: The cynical, unfiltered truth of what it actually means. Under 250 characters. Devastatingly accurate. Punchline at the end.
-4. caption: Exactly 5 hashtags separated by spaces. Mix viral (#corporatelife #officememes #indianoffice) with content-specific ones. No other text.
+Generate a Corporate Translator format reel for an Indian audience. Rules:
 
-Respond with ONLY valid JSON:
+1. topText — the scroll-stopping label shown at top of screen. Must make an Indian office worker stop mid-scroll and go "yaar exactly". Be specific: call out the exact archetype or situation. Examples: "HR Email Translator 📧", "Startup Founder Speak 🤡", "IT Manager Dictionary", "Appraisal Season Subtitles 💀", "LinkedIn India Decoded". Max 6 words.
+
+2. term — the actual corporate phrase, HR speak, or manager line being translated. Must be something real that Indian employees hear constantly. Can be a full sentence. Examples: "We're a family here", "Your CTC includes a strong variable component", "Let's discuss your growth trajectory", "We need someone with ownership mindset". Choose phrases where the gap between what's said and what's meant is maximum.
+
+3. translation — the brutal, accurate, zero-filter truth of what it actually means in the Indian workplace context. Reference specifics: rupee amounts, Indian company culture, EPFO, PF, appraisal cycles, notice periods, Gurgaon/Bengaluru/Mumbai startup realities. Hinglish where it sharpens the knife. Structure: context → the real meaning → gut-punch ending. Under 250 characters.
+
+4. caption — exactly 5 hashtags, space-separated, zero other text. Mix high-volume Indian tags (#indiancorporate #officememes #indianstartup #9to5india #corporatelife) with 1-2 specific to the topic.
+
+Respond with ONLY valid JSON — no markdown, no explanation:
 {
   "topText": "...",
   "term": "...",
