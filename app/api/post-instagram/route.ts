@@ -3,19 +3,22 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   const startTime = Date.now();
   try {
-    const { videoUrl, caption } = await request.json();
+    const { videoUrl, caption, scheduled_at } = await request.json();
 
     const webhookUrl = process.env.MAKE_WEBHOOK_URL;
     if (!webhookUrl || webhookUrl === 'PLACEHOLDER_MAKE_WEBHOOK_URL') {
       return NextResponse.json({ error: 'Make.com webhook not configured' }, { status: 503 });
     }
 
-    console.log(`[post-instagram] Sending to Make.com — videoUrl: ${videoUrl}`);
+    console.log(`[post-instagram] Sending to Make.com — videoUrl: ${videoUrl}${scheduled_at ? `, scheduled_at: ${scheduled_at}` : ''}`);
+
+    const payload: Record<string, string> = { videoUrl, caption };
+    if (scheduled_at) payload.scheduled_at = scheduled_at;
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ videoUrl, caption }),
+      body: JSON.stringify(payload),
     });
 
     const makeStatus = response.status;
