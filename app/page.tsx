@@ -13,8 +13,8 @@ const BUILD_TIME = raw
 export default function Page() {
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-50 p-4 md:p-8 font-sans">
-      <div className="fixed top-3 right-4 flex items-center gap-3 z-50">
-        <span className="text-[10px] font-mono text-neutral-600 hidden sm:block">
+      <div className="fixed top-3 right-4 flex flex-col items-end gap-1 z-50">
+        <span className="text-[10px] font-mono text-neutral-600">
           build {BUILD_TIME} IST
         </span>
         <button

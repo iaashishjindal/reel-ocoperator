@@ -257,15 +257,33 @@ export default function ReelGenerator() {
 
 ${topicLine}
 
-Generate a ChatGPT Q&A format reel for an Indian audience. Rules:
+Generate a ChatGPT Q&A format reel for an Indian audience.
 
-1. topText — the scroll-stopping category hook shown at the top of the screen. Must be so specific and relatable that an Indian corporate employee feels personally attacked. Use Hinglish, numbers, or a sharp label. Examples: "Appraisal Bell Curve 📉", "IT Service Company Math 🤡", "Startup Equity Reality", "HR Dictionary 💀", "Package vs In-Hand 😭". Max 6 words.
+WHAT MAKES A GREAT ONE — study these examples carefully and match their quality:
 
-2. question — what a burnt-out Indian employee would actually type into ChatGPT at 11 PM. Must feel like a real, specific dilemma — not generic. Reference actual Indian workplace pain: bell curves, variable pay, service bonds, manager politics, notice periods, LinkedIn pressure. Under 12 words. No corporate jargon in the question — use plain, desperate human language.
+EXAMPLE 1:
+{"topText":"Package vs In-Hand 😭","question":"How do I explain to my parents that 12 LPA is ₹68K in-hand?","answer":"You don't. Let them think you're rich. It's the only bonus this company will ever give you.","caption":"#indiancorporate #9to5india #officememes #salarytalk #corporatelife"}
 
-3. answer — the unfiltered, viciously accurate truth that nobody in the office will say out loud. Structure: short setup → escalation → gut-punch punchline at the very end. Use Hinglish sparingly but precisely where it hits hardest. Name the specific absurdity. Under 250 characters.
+EXAMPLE 2:
+{"topText":"Bell Curve Math 📉","question":"My whole team hit targets but I got a 2 in appraisal. What happened?","answer":"Statistically, someone had to fail. Congratulations — you are the sacrifice. Bell curve is not about performance. It's about math.","caption":"#indiancorporate #appraisalseason #officememes #9to5india #corporatelife"}
 
-4. caption — exactly 5 hashtags, space-separated, zero other text. Mix high-volume Indian tags (#indiancorporate #officememes #indianstartup #9to5india #corporatelife) with 1-2 specific to the topic.
+EXAMPLE 3:
+{"topText":"Service Bond Reality 📝","question":"Is a 2-year service bond after 3 days of training legally enforceable?","answer":"Technically no. But your F&F takes 6 months and they hold your relieving letter hostage. Same result, different paperwork.","caption":"#indiancorporate #servicebond #officememes #9to5india #corporatelife"}
+
+EXAMPLE 4:
+{"topText":"Layoff Season Logic 🤡","question":"Company had record profits this quarter. Why are we getting laid off?","answer":"Because record profits require maintaining margins. You are the margin.","caption":"#indiancorporate #layoffs #officememes #9to5india #techlayoffs"}
+
+WHAT SEPARATES THESE FROM GENERIC:
+- The question sounds like a real human typed it at 11 PM in despair — specific numbers, specific mechanisms
+- The answer names the exact trap (F&F, relieving letter, bell curve math) — not just "this is unfair"
+- The punchline reframes everything in one sentence that makes you go "wait, that's exactly right"
+- Short setup → escalation → gut-punch. Never explain the joke.
+
+Now generate one for the given topic. Rules:
+- topText: Max 6 words. Specific enough to feel like a personal attack on every Indian corporate employee.
+- question: Under 12 words. Plain desperate human language, not corporate speak.
+- answer: Under 250 characters. Name the specific mechanism. Punchline last.
+- caption: Exactly 5 hashtags, space-separated, nothing else.
 
 Respond with ONLY valid JSON — no markdown, no explanation:
 {
@@ -279,15 +297,33 @@ Respond with ONLY valid JSON — no markdown, no explanation:
 
 ${topicLine}
 
-Generate a Corporate Translator format reel for an Indian audience. Rules:
+Generate a Corporate Translator format reel for an Indian audience.
 
-1. topText — the scroll-stopping label shown at top of screen. Must make an Indian office worker stop mid-scroll and go "yaar exactly". Be specific: call out the exact archetype or situation. Examples: "HR Email Translator 📧", "Startup Founder Speak 🤡", "IT Manager Dictionary", "Appraisal Season Subtitles 💀", "LinkedIn India Decoded". Max 6 words.
+WHAT MAKES A GREAT ONE — study these examples carefully and match their quality:
 
-2. term — the actual corporate phrase, HR speak, or manager line being translated. Must be something real that Indian employees hear constantly. Can be a full sentence. Examples: "We're a family here", "Your CTC includes a strong variable component", "Let's discuss your growth trajectory", "We need someone with ownership mindset". Choose phrases where the gap between what's said and what's meant is maximum.
+EXAMPLE 1:
+{"topText":"CTC Translator 💀","term":"Your CTC includes a strong variable component","translation":"40% of your salary is imaginary. We'll explain why you didn't qualify in March, after the appraisal cycle you had zero input on.","caption":"#indiancorporate #ctcvsinhand #officememes #9to5india #appraisalseason"}
 
-3. translation — the brutal, accurate, zero-filter truth of what it actually means in the Indian workplace context. Reference specifics: rupee amounts, Indian company culture, EPFO, PF, appraisal cycles, notice periods, Gurgaon/Bengaluru/Mumbai startup realities. Hinglish where it sharpens the knife. Structure: context → the real meaning → gut-punch ending. Under 250 characters.
+EXAMPLE 2:
+{"topText":"Startup Founder Speak 🤡","term":"We're looking for someone with an ownership mindset","translation":"We want you to care about this like it's your company. It is not your company. There is no equity. The founder's car is expensed to the company.","caption":"#indianstartup #startuplife #officememes #9to5india #indiancorporate"}
 
-4. caption — exactly 5 hashtags, space-separated, zero other text. Mix high-volume Indian tags (#indiancorporate #officememes #indianstartup #9to5india #corporatelife) with 1-2 specific to the topic.
+EXAMPLE 3:
+{"topText":"Growth Opportunity Decoded","term":"This is a growth opportunity for you","translation":"We need someone to do this unglamorous work. We cannot pay more. 'Growth opportunity' is the bow we tied around it.","caption":"#indiancorporate #officememes #9to5india #corporatelife #hrtranslator"}
+
+EXAMPLE 4:
+{"topText":"HR Recognition Layer 🏆","term":"We believe in recognizing talent","translation":"Your hike was 0%. This conversation is the recognition. Frame it if you want.","caption":"#indiancorporate #appraisalseason #officememes #9to5india #corporatelife"}
+
+WHAT SEPARATES THESE FROM GENERIC:
+- The term is something every Indian employee has heard and winced at — real, specific, not a made-up buzzword
+- The translation names the exact mechanism of the gap (no equity, F&F held hostage, zero-input appraisal) — not just "they're lying"
+- The punchline lands like a door closing. One sentence that reframes everything.
+- Context → real meaning → gut-punch. Never over-explain.
+
+Now generate one for the given topic. Rules:
+- topText: Max 6 words. Specific enough to make an Indian office worker stop mid-scroll.
+- term: A real phrase Indian employees actually hear. Can be a full sentence.
+- translation: Under 250 characters. Name the specific mechanism. Punchline last.
+- caption: Exactly 5 hashtags, space-separated, nothing else.
 
 Respond with ONLY valid JSON — no markdown, no explanation:
 {
