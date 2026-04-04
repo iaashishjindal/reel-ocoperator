@@ -111,6 +111,8 @@ export default function ReelGenerator() {
   const [caption, setCaption] = useState("");
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [postStatus, setPostStatus] = useState<'idle' | 'recording' | 'uploading' | 'posting' | 'publishing' | 'done' | 'error'>('idle');
   const [publishingSecsLeft, setPublishingSecsLeft] = useState(0);
@@ -143,6 +145,8 @@ export default function ReelGenerator() {
     setPublishingSecsLeft(0);
     setIsRecording(false);
     setIsDownloading(false);
+    setIsScheduled(false);
+    setScheduledAt('');
   };
 
   const [usageCost, setUsageCost] = useState(0);
@@ -1008,12 +1012,16 @@ Respond with ONLY valid JSON — no markdown, no explanation:
       // Step 3: Send to Make.com → Instagram
       setPostStatus('posting');
       addLog('STEP 3 — Sending to Make.com webhook → Instagram...');
-      addLog(`  Payload: { videoUrl: "${uploadData.url}", caption: "${caption?.slice(0,60)}${caption?.length > 60 ? '...' : ''}" }`);
+      const scheduledAtISO = isScheduled && scheduledAt ? `${scheduledAt}:00+05:30` : null;
+      addLog(`  Payload: { videoUrl: "${uploadData.url}", caption: "${caption?.slice(0,60)}${caption?.length > 60 ? '...' : ''}"${scheduledAtISO ? `, scheduled_at: "${scheduledAtISO}"` : ''} }`);
+
+      const postBody: Record<string, string> = { videoUrl: uploadData.url, caption };
+      if (scheduledAtISO) postBody.scheduled_at = scheduledAtISO;
 
       const postRes = await fetch('/api/post-instagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoUrl: uploadData.url, caption }),
+        body: JSON.stringify(postBody),
       });
       const postData = await postRes.json().catch(() => ({}));
       addLog(`  HTTP ${postRes.status} — Make.com status: ${postData.makeStatus}, body: "${postData.makeBody}", duration: ${postData.durationMs}ms`);
@@ -1023,24 +1031,29 @@ Respond with ONLY valid JSON — no markdown, no explanation:
       }
 
       addLog('✓ Make.com accepted the request — handing off to Instagram...');
-      addLog('Publishing to Instagram (this takes 30–90 seconds)...');
       setPostError(null);
 
-      // Start publishing countdown
-      const PUBLISH_SECS = 75;
-      setPublishingSecsLeft(PUBLISH_SECS);
-      setPostStatus('publishing');
+      if (isScheduled && scheduledAt) {
+        addLog(`✓ Scheduled for ${scheduledAt.replace('T', ' ')} IST — Make.com will post at that time`);
+        setPostStatus('done');
+      } else {
+        addLog('Publishing to Instagram (this takes 30–90 seconds)...');
+        // Start publishing countdown
+        const PUBLISH_SECS = 75;
+        setPublishingSecsLeft(PUBLISH_SECS);
+        setPostStatus('publishing');
 
-      let secsLeft = PUBLISH_SECS;
-      publishingTimerRef.current = setInterval(() => {
-        secsLeft -= 1;
-        setPublishingSecsLeft(secsLeft);
-        if (secsLeft <= 0) {
-          if (publishingTimerRef.current) clearInterval(publishingTimerRef.current);
-          addLog('✓ Publishing window complete — check Instagram now');
-          setPostStatus('done');
-        }
-      }, 1000);
+        let secsLeft = PUBLISH_SECS;
+        publishingTimerRef.current = setInterval(() => {
+          secsLeft -= 1;
+          setPublishingSecsLeft(secsLeft);
+          if (secsLeft <= 0) {
+            if (publishingTimerRef.current) clearInterval(publishingTimerRef.current);
+            addLog('✓ Publishing window complete — check Instagram now');
+            setPostStatus('done');
+          }
+        }, 1000);
+      }
     } catch (e: any) {
       console.error(e);
       if (publishingTimerRef.current) clearInterval(publishingTimerRef.current);
@@ -1314,7 +1327,53 @@ Respond with ONLY valid JSON — no markdown, no explanation:
           </div>
         </div>
 
-        <div className="pt-4 flex flex-col sm:flex-row gap-4">
+        {/* Schedule toggle */}
+        <div className="pt-4 space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer w-fit">
+            <input
+              type="checkbox"
+              checked={isScheduled}
+              onChange={(e) => {
+                setIsScheduled(e.target.checked);
+                if (e.target.checked && !scheduledAt) {
+                  // Default to tomorrow at 10:00 AM IST
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  const y = tomorrow.getFullYear();
+                  const mo = String(tomorrow.getMonth() + 1).padStart(2, '0');
+                  const d = String(tomorrow.getDate()).padStart(2, '0');
+                  setScheduledAt(`${y}-${mo}-${d}T10:00`);
+                }
+              }}
+              disabled={isPosting || postStatus === 'publishing'}
+              className="w-4 h-4 accent-purple-500 cursor-pointer"
+            />
+            <span className="text-sm text-neutral-300">Schedule for later</span>
+          </label>
+          {isScheduled && (
+            <div className="flex items-center gap-3">
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                min={(() => {
+                  const d = new Date(Date.now() + 10 * 60 * 1000);
+                  const y = d.getFullYear();
+                  const mo = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  const h = String(d.getHours()).padStart(2, '0');
+                  const m = String(d.getMinutes()).padStart(2, '0');
+                  return `${y}-${mo}-${day}T${h}:${m}`;
+                })()}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                disabled={isPosting || postStatus === 'publishing'}
+                className="bg-neutral-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+              />
+              <span className="text-xs text-neutral-500">IST (UTC+5:30)</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
           <button
             onClick={handleDownload}
             disabled={isRecording || isPosting || postStatus === 'publishing'}
@@ -1325,19 +1384,26 @@ Respond with ONLY valid JSON — no markdown, no explanation:
           </button>
 
           {postStatus === 'done' ? (
-            <a
-              href="https://www.instagram.com/corporategpt_unfilter/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-medium rounded-xl text-sm transition-all"
-            >
-              <Instagram className="w-4 h-4" />
-              Check Instagram ↗
-            </a>
+            isScheduled ? (
+              <div className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-700 to-teal-700 text-white font-medium rounded-xl text-sm">
+                <Instagram className="w-4 h-4" />
+                Scheduled ✓ {scheduledAt.replace('T', ' ')} IST
+              </div>
+            ) : (
+              <a
+                href="https://www.instagram.com/corporategpt_unfilter/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-medium rounded-xl text-sm transition-all"
+              >
+                <Instagram className="w-4 h-4" />
+                Check Instagram ↗
+              </a>
+            )
           ) : (
             <button
               onClick={handleUpload}
-              disabled={isRecording || isPosting || postStatus === 'publishing'}
+              disabled={isRecording || isPosting || postStatus === 'publishing' || (isScheduled && !scheduledAt)}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-all"
             >
               <Instagram className="w-4 h-4" />
@@ -1346,6 +1412,7 @@ Respond with ONLY valid JSON — no markdown, no explanation:
                postStatus === 'posting' ? 'Sending to Make.com...' :
                postStatus === 'publishing' ? `Publishing... ${publishingSecsLeft}s` :
                postStatus === 'error' ? 'Failed — retry' :
+               isScheduled ? 'Schedule Post' :
                'Upload to Instagram'}
             </button>
           )}
