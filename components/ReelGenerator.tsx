@@ -266,28 +266,29 @@ Generate a ChatGPT Q&A format reel for an Indian audience.
 WHAT MAKES A GREAT ONE — study these examples carefully and match their quality:
 
 EXAMPLE 1:
-{"topText":"Package vs In-Hand 😭","question":"How do I explain to my parents that 12 LPA is ₹68K in-hand?","answer":"You don't. Let them think you're rich. It's the only bonus this company will ever give you.","caption":"#indiancorporate #9to5india #officememes #salarytalk #corporatelife"}
+{"topText":"Package vs In-Hand 😭","question":"How do I explain to my parents that 12 LPA is ₹68K in-hand?","answer":"You don't. Let them think you're rich. It's the only bonus this company will ever give you.","caption":"Tag someone whose offer letter and salary slip tell two completely different stories. 😭\n\n#indiancorporate #9to5india #officememes #salarytalk #corporatelife"}
 
 EXAMPLE 2:
-{"topText":"Bell Curve Math 📉","question":"My whole team hit targets but I got a 2 in appraisal. What happened?","answer":"Statistically, someone had to fail. Congratulations — you are the sacrifice. Bell curve is not about performance. It's about math.","caption":"#indiancorporate #appraisalseason #officememes #9to5india #corporatelife"}
+{"topText":"Bell Curve Math 📉","question":"My whole team hit targets but I got a 2 in appraisal. What happened?","answer":"Statistically, someone had to fail. Congratulations — you are the sacrifice. Bell curve is not about performance. It's about math.","caption":"The appraisal system was never about your performance. It was about filling a quota. 🤡\n\n#indiancorporate #appraisalseason #officememes #9to5india #corporatelife"}
 
 EXAMPLE 3:
-{"topText":"Service Bond Reality 📝","question":"Is a 2-year service bond after 3 days of training legally enforceable?","answer":"Technically no. But your F&F takes 6 months and they hold your relieving letter hostage. Same result, different paperwork.","caption":"#indiancorporate #servicebond #officememes #9to5india #corporatelife"}
+{"topText":"Service Bond Reality 📝","question":"Is a 2-year service bond after 3 days of training legally enforceable?","answer":"Technically no. But your F&F takes 6 months and they hold your relieving letter hostage. Same result, different paperwork.","caption":"They don't need the bond to be legal. They just need your next employer to be waiting. 💀\n\n#indiancorporate #servicebond #officememes #9to5india #corporatelife"}
 
 EXAMPLE 4:
-{"topText":"Layoff Season Logic 🤡","question":"Company had record profits this quarter. Why are we getting laid off?","answer":"Because record profits require maintaining margins. You are the margin.","caption":"#indiancorporate #layoffs #officememes #9to5india #techlayoffs"}
+{"topText":"Layoff Season Logic 🤡","question":"Company had record profits this quarter. Why are we getting laid off?","answer":"Because record profits require maintaining margins. You are the margin.","caption":"Record profits. Record layoffs. At some point you have to ask who the company is actually for. 📉\n\n#indiancorporate #layoffs #officememes #9to5india #techlayoffs"}
 
 WHAT SEPARATES THESE FROM GENERIC:
 - The question sounds like a real human typed it at 11 PM in despair — specific numbers, specific mechanisms
 - The answer names the exact trap (F&F, relieving letter, bell curve math) — not just "this is unfair"
 - The punchline reframes everything in one sentence that makes you go "wait, that's exactly right"
 - Short setup → escalation → gut-punch. Never explain the joke.
+- The caption adds a fresh angle or observation that extends the joke — 1-2 punchy sentences, then a blank line, then up to 5 hashtags.
 
 Now generate one for the given topic. Rules:
 - topText: Max 6 words. Specific enough to feel like a personal attack on every Indian corporate employee.
 - question: Under 12 words. Plain desperate human language, not corporate speak.
 - answer: Under 250 characters. Name the specific mechanism. Punchline last.
-- caption: Exactly 5 hashtags, space-separated, nothing else.
+- caption: 1-2 punchy sentences that extend the joke or call out the audience (e.g. "Tag someone who...", "Save this for appraisal season.", a sharp observation). Then a blank line. Then up to 5 hashtags space-separated. Total caption under 300 characters.
 
 Respond with ONLY valid JSON — no markdown, no explanation:
 {
@@ -306,28 +307,29 @@ Generate a Corporate Translator format reel for an Indian audience.
 WHAT MAKES A GREAT ONE — study these examples carefully and match their quality:
 
 EXAMPLE 1:
-{"topText":"CTC Translator 💀","term":"Your CTC includes a strong variable component","translation":"40% of your salary is imaginary. We'll explain why you didn't qualify in March, after the appraisal cycle you had zero input on.","caption":"#indiancorporate #ctcvsinhand #officememes #9to5india #appraisalseason"}
+{"topText":"CTC Translator 💀","term":"Your CTC includes a strong variable component","translation":"40% of your salary is imaginary. We'll explain why you didn't qualify in March, after the appraisal cycle you had zero input on.","caption":"They call it 'variable' because it varies between 'maybe' and 'absolutely not'. Save this for offer letter season. 💀\n\n#indiancorporate #ctcvsinhand #officememes #9to5india #appraisalseason"}
 
 EXAMPLE 2:
-{"topText":"Startup Founder Speak 🤡","term":"We're looking for someone with an ownership mindset","translation":"We want you to care about this like it's your company. It is not your company. There is no equity. The founder's car is expensed to the company.","caption":"#indianstartup #startuplife #officememes #9to5india #indiancorporate"}
+{"topText":"Startup Founder Speak 🤡","term":"We're looking for someone with an ownership mindset","translation":"We want you to care about this like it's your company. It is not your company. There is no equity. The founder's car is expensed to the company.","caption":"Tag the founder who said this with a straight face while filing for Series A. 🤡\n\n#indianstartup #startuplife #officememes #9to5india #indiancorporate"}
 
 EXAMPLE 3:
-{"topText":"Growth Opportunity Decoded","term":"This is a growth opportunity for you","translation":"We need someone to do this unglamorous work. We cannot pay more. 'Growth opportunity' is the bow we tied around it.","caption":"#indiancorporate #officememes #9to5india #corporatelife #hrtranslator"}
+{"topText":"Growth Opportunity Decoded","term":"This is a growth opportunity for you","translation":"We need someone to do this unglamorous work. We cannot pay more. 'Growth opportunity' is the bow we tied around it.","caption":"Every time they can't pay you more, a 'growth opportunity' is born. Tag someone living one right now. 📈\n\n#indiancorporate #officememes #9to5india #corporatelife #hrtranslator"}
 
 EXAMPLE 4:
-{"topText":"HR Recognition Layer 🏆","term":"We believe in recognizing talent","translation":"Your hike was 0%. This conversation is the recognition. Frame it if you want.","caption":"#indiancorporate #appraisalseason #officememes #9to5india #corporatelife"}
+{"topText":"HR Recognition Layer 🏆","term":"We believe in recognizing talent","translation":"Your hike was 0%. This conversation is the recognition. Frame it if you want.","caption":"The recognition was free. Which is exactly what it was worth. 🏆\n\n#indiancorporate #appraisalseason #officememes #9to5india #corporatelife"}
 
 WHAT SEPARATES THESE FROM GENERIC:
 - The term is something every Indian employee has heard and winced at — real, specific, not a made-up buzzword
 - The translation names the exact mechanism of the gap (no equity, F&F held hostage, zero-input appraisal) — not just "they're lying"
 - The punchline lands like a door closing. One sentence that reframes everything.
 - Context → real meaning → gut-punch. Never over-explain.
+- The caption adds a fresh angle — 1-2 punchy sentences that call out the audience or extend the joke, then hashtags.
 
 Now generate one for the given topic. Rules:
 - topText: Max 6 words. Specific enough to make an Indian office worker stop mid-scroll.
 - term: A real phrase Indian employees actually hear. Can be a full sentence.
 - translation: Under 250 characters. Name the specific mechanism. Punchline last.
-- caption: Exactly 5 hashtags, space-separated, nothing else.
+- caption: 1-2 punchy sentences that extend the joke or call out the audience (e.g. "Tag someone who...", a sharp observation, "Save this for..."). Then a blank line. Then up to 5 hashtags space-separated. Total caption under 300 characters.
 
 Respond with ONLY valid JSON — no markdown, no explanation:
 {
