@@ -86,11 +86,13 @@ const DEFAULT_CATEGORIES = [
 
 export default function ReelGenerator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [format, setFormat] = useState<'chatgpt' | 'translator'>('chatgpt');
+  const [format, setFormat] = useState<'chatgpt' | 'translator' | 'leftbehind'>('chatgpt');
   const [question, setQuestion] = useState("How do I tell my manager AI can't do everything?");
   const [answer, setAnswer] = useState("Tell him the AI is hallucinating a world where he is competent...");
   const [term, setTerm] = useState("Circle Back");
   const [translation, setTranslation] = useState("I am hoping you forget this conversation ever happened before our next 1:1.");
+  const [skill, setSkill] = useState("Making a PowerPoint presentation");
+  const [aiComparison, setAiComparison] = useState("You spent 2 days on this.|AI does it in 11 seconds.");
   const [isRecording, setIsRecording] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoExt, setVideoExt] = useState<string>('mp4');
@@ -302,7 +304,7 @@ Respond with ONLY valid JSON — no markdown, no explanation:
   "answer": "...",
   "caption": "..."
 }`;
-      } else {
+      } else if (format === 'translator') {
         prompt = `${PERSONA}
 
 ${topicLine}
@@ -347,6 +349,48 @@ Respond with ONLY valid JSON — no markdown, no explanation:
   "translation": "...",
   "caption": "..."
 }`;
+      } else {
+        prompt = `${PERSONA}
+
+${topicLine}
+
+Generate an "AI Left Behind" format reel for an Indian audience. This format shows a specific skill or task that AI has made obsolete, creating the gut-punch "you are being left behind" feeling that makes content go viral.
+
+WHAT MAKES A GREAT ONE — study these examples carefully and match their quality:
+
+EXAMPLE 1:
+{"topText":"Skills Obituary 💀","skill":"Writing a cold email","aiComparison":"2 hours. 6 drafts. Ignored anyway.|One prompt. Sounds exactly like you. Still ignored, but faster.","caption":"Tag the colleague who spent a week on an email that AI wrote in 30 seconds. 💀\n\n#indiancorporate #aitools #officememes #9to5india #futureofwork"}
+
+EXAMPLE 2:
+{"topText":"AI Ate Your Job 🤖","skill":"Debugging someone else's Python","aiComparison":"Stack Overflow. 4 hours. Works, don't touch it.|Paste. Fix. 20 seconds. It also wrote the bug.","caption":"The most painful part? AI debugs it faster than the person who wrote it. 😭\n\n#indiantech #developerlife #aitools #9to5india #officememes"}
+
+EXAMPLE 3:
+{"topText":"Your Degree vs Reality 📉","skill":"Making a financial model in Excel","aiComparison":"MBA. 3 years. 47 YouTube tutorials.|Claude. 8 seconds. Prettier than yours.","caption":"Save this for your next 'I have a unique skill set' conversation with HR. 🤡\n\n#indiancorporate #mba #aitools #officememes #9to5india"}
+
+EXAMPLE 4:
+{"topText":"IT Skills Obituary 💻","skill":"Writing boilerplate API documentation","aiComparison":"Junior dev. 2 days. Manager still not happy.|AI. 11 seconds. Manager still not happy.","caption":"The only thing AI didn't replace was the manager who doesn't read the docs anyway. 💀\n\n#indiantech #developerlife #aitools #corporatelife #officememes"}
+
+WHAT SEPARATES THESE FROM GENERIC:
+- The skill is a SPECIFIC TASK (2–5 words), not a job title. "Making a financial model" not "Finance".
+- Both sides of the comparison have NUMBERS. "2 hours. 6 drafts." vs "One prompt. 30 seconds." Numbers are the gut-punch.
+- The AI side is not just faster — it adds a twist that makes it more painful (e.g. "still ignored, but faster", "it also wrote the bug", "prettier than yours").
+- The | pipe is the ONLY separator. Human side left of pipe, AI side right of pipe. No other pipe characters.
+- Each side strictly under 80 characters.
+- One idea. One punchline. Stop there.
+
+Now generate one for the given topic. Rules:
+- topText: Max 6 words. Should make someone feel personally attacked by their own obsolescence.
+- skill: 2–5 words. A specific task, not a job title. The more recognisable, the better.
+- aiComparison: Human side | AI side. Both sides under 80 chars. Numbers mandatory. AI side must have a twist that makes the human side feel even more painful. Use | as the ONLY separator.
+- caption: 1-2 punchy sentences (tag someone, save this for, sharp observation). Then a blank line. Then up to 5 hashtags.
+
+Respond with ONLY valid JSON — no markdown, no explanation:
+{
+  "topText": "...",
+  "skill": "...",
+  "aiComparison": "Human side here.|AI side here.",
+  "caption": "..."
+}`;
       }
 
       // Retry up to 2 times on 503/overload
@@ -380,9 +424,12 @@ Respond with ONLY valid JSON — no markdown, no explanation:
         if (format === 'chatgpt') {
           if (data.question) setQuestion(data.question);
           if (data.answer) setAnswer(data.answer);
-        } else {
+        } else if (format === 'translator') {
           if (data.term) setTerm(data.term);
           if (data.translation) setTranslation(data.translation);
+        } else {
+          if (data.skill) setSkill(data.skill);
+          if (data.aiComparison) setAiComparison(data.aiComparison);
         }
       }
     } catch (error: any) {
@@ -905,6 +952,223 @@ Respond with ONLY valid JSON — no markdown, no explanation:
     ctx.restore();
   };
 
+  const drawLeftBehindFrame = (
+    ctx: CanvasRenderingContext2D,
+    elapsed: number,
+    skillWords: string[],
+    comparisonWords: string[],
+    tText: string,
+    tFont: string,
+    tColor: string,
+    tSize: number
+  ) => {
+    const margin = 300;
+    const safeHeight = 1920 - margin * 2;
+    const systemFont = `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+
+    // Black margins
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // Dark near-black background for safe area
+    ctx.fillStyle = '#0A0A0A';
+    ctx.fillRect(0, margin, 1080, safeHeight);
+
+    // Subtle red radial vignette
+    const vignette = ctx.createRadialGradient(540, margin + safeHeight / 2, 0, 540, margin + safeHeight / 2, 900);
+    vignette.addColorStop(0, 'rgba(220, 38, 38, 0.07)');
+    vignette.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, margin, 1080, safeHeight);
+
+    ctx.save();
+    ctx.translate(0, margin);
+
+    // --- Top margin text ---
+    {
+      let currentSize = tSize;
+      let lines: string[] = [];
+      while (currentSize > 20) {
+        ctx.font = `bold ${currentSize}px ${tFont}`;
+        lines = [];
+        const words = tText.split(' ');
+        let current = words[0] || '';
+        for (let i = 1; i < words.length; i++) {
+          if (ctx.measureText(current + ' ' + words[i]).width < 980) current += ' ' + words[i];
+          else { lines.push(current); current = words[i]; }
+        }
+        lines.push(current);
+        if (lines.length * currentSize * 1.2 < margin - 40) break;
+        currentSize -= 4;
+      }
+      const lineHeight = currentSize * 1.2;
+      const totalH = lines.length * lineHeight;
+      let y = -(margin / 2) - totalH / 2 + lineHeight;
+      ctx.fillStyle = tColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      for (const line of lines) { ctx.fillText(line, 540, y); y += lineHeight; }
+    }
+
+    // --- Parse comparison into human/ai parts ---
+    const fullComparison = comparisonWords.join(' ');
+    const pipeIdx = comparisonWords.indexOf('|') !== -1
+      ? comparisonWords.indexOf('|')
+      : comparisonWords.findIndex(w => w.includes('|'));
+    const compPipeStr = fullComparison.indexOf('|');
+    const humanFull = compPipeStr >= 0 ? fullComparison.slice(0, compPipeStr).trim() : fullComparison;
+    const aiFull = compPipeStr >= 0 ? fullComparison.slice(compPipeStr + 1).trim() : '';
+    const humanWordsArr = humanFull.split(/\s+/).filter(Boolean);
+    const aiWordsArr = aiFull.split(/\s+/).filter(Boolean);
+
+    // --- Timing ---
+    const t1 = skillWords.length * msPerWord;
+    const t2 = t1 + 600;                                      // skill sit pause
+    const t3 = t2 + humanWordsArr.length * msPerWord;         // human cost finishes
+    const t4 = t3 + 800;                                      // critical pause
+    // ai cost starts at t4
+
+    // --- Layout pre-calculation ---
+    const maxWidth = 880;
+    const getLines = (c: CanvasRenderingContext2D, text: string, mw: number) => {
+      if (!text) return [];
+      const ws = text.split(' ');
+      const ls: string[] = [];
+      let cur = ws[0];
+      for (let i = 1; i < ws.length; i++) {
+        if (c.measureText(cur + ' ' + ws[i]).width < mw) cur += ' ' + ws[i];
+        else { ls.push(cur); cur = ws[i]; }
+      }
+      ls.push(cur);
+      return ls;
+    };
+
+    ctx.font = `bold 88px ${systemFont}`;
+    const skillLines = getLines(ctx, skillWords.join(' '), maxWidth);
+    const skillHeight = skillLines.length * 100;
+
+    ctx.font = `56px ${systemFont}`;
+    const humanLines = getLines(ctx, humanFull, maxWidth);
+    const humanHeight = humanLines.length * 72;
+    const aiLines = getLines(ctx, aiFull || ' ', maxWidth);
+    const aiHeight = aiLines.length * 72;
+
+    const labelH = 40;
+    const totalContentHeight =
+      labelH + 30 + skillHeight +    // SKILL label + gap + skill text
+      100 +                           // gap + divider
+      labelH + 24 + humanHeight +     // YOU label + gap + human text
+      60 +                            // gap between sections
+      labelH + 24 + aiHeight;         // AI label + gap + ai text
+
+    let scale = 1;
+    const maxAllowed = safeHeight - 200;
+    if (totalContentHeight > maxAllowed) scale = maxAllowed / totalContentHeight;
+
+    const scaledHeight = totalContentHeight * scale;
+    const startY = (safeHeight - scaledHeight) / 2;
+
+    ctx.save();
+    ctx.translate(100, startY);
+    ctx.scale(scale, scale);
+
+    let y = 0;
+
+    // SKILL label
+    ctx.font = `bold 40px ${systemFont}`;
+    ctx.fillStyle = '#A3A3A3';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('SKILL', 0, y + 40);
+    y += labelH + 30;
+
+    // Skill text — types in word by word
+    const skillRevealed = Math.min(Math.floor(elapsed / msPerWord), skillWords.length);
+    const skillDisplayed = skillWords.slice(0, skillRevealed).join(' ');
+    ctx.font = `bold 88px ${systemFont}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // Glow while skill is typing
+    if (elapsed < t1 + 200) {
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = 'rgba(255,255,255,0.15)';
+    }
+    ctx.fillStyle = '#FFFFFF';
+    const skillDisplayLines = getLines(ctx, skillDisplayed || skillWords[0] || '', maxWidth);
+    for (let i = 0; i < skillLines.length; i++) {
+      const lineText = i < skillDisplayLines.length ? skillDisplayLines[i] : '';
+      ctx.fillText(lineText, 0, y + (i + 1) * 100);
+    }
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
+    y += skillHeight;
+
+    // Divider + sections only after skill finishes
+    if (elapsed >= t2) {
+      y += 60;
+      // Horizontal rule
+      ctx.strokeStyle = '#27272A';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(880, y);
+      ctx.stroke();
+      y += 40;
+
+      // WHAT IT TOOK YOU label
+      ctx.font = `bold 40px ${systemFont}`;
+      ctx.fillStyle = '#FB923C';
+      ctx.fillText('WHAT IT TOOK YOU', 0, y + 40);
+      y += labelH + 24;
+
+      // Human cost — types in word by word
+      const humanRevealed = Math.min(Math.floor((elapsed - t2) / msPerWord), humanWordsArr.length);
+      const humanDisplayed = humanWordsArr.slice(0, humanRevealed).join(' ');
+      ctx.font = `56px ${systemFont}`;
+      ctx.fillStyle = '#E5E7EB';
+      const humanDisplayLines = getLines(ctx, humanDisplayed || ' ', maxWidth);
+      for (let i = 0; i < humanLines.length; i++) {
+        const lineText = i < humanDisplayLines.length ? humanDisplayLines[i] : '';
+        ctx.fillText(lineText, 0, y + (i + 1) * 72);
+      }
+      y += humanHeight;
+
+      // AI section — only after critical pause
+      if (elapsed >= t4 && aiFull) {
+        y += 60;
+
+        // WHAT AI DOES NOW label
+        ctx.font = `bold 40px ${systemFont}`;
+        ctx.fillStyle = '#22D3EE';
+        ctx.fillText('WHAT AI DOES NOW', 0, y + 40);
+        y += labelH + 24;
+
+        // AI cost — types in word by word
+        const aiRevealed = Math.min(Math.floor((elapsed - t4) / msPerWord), aiWordsArr.length);
+        const aiDisplayed = aiWordsArr.slice(0, aiRevealed).join(' ');
+        ctx.font = `56px ${systemFont}`;
+        ctx.fillStyle = '#A5F3FC';
+        const aiDisplayLines = getLines(ctx, aiDisplayed || ' ', maxWidth);
+        for (let i = 0; i < aiLines.length; i++) {
+          const lineText = i < aiDisplayLines.length ? aiDisplayLines[i] : '';
+          ctx.fillText(lineText, 0, y + (i + 1) * 72);
+        }
+      }
+    }
+
+    ctx.restore();
+
+    // Watermark
+    ctx.font = `500 32px ${systemFont}`;
+    ctx.fillStyle = '#3F3F46';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('@corporategpt_unfilter', 540, safeHeight - 80);
+
+    ctx.restore();
+  };
+
   const recordVideo = (): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!canvasRef.current) { reject(new Error('Canvas not available')); return; }
@@ -964,13 +1228,21 @@ Respond with ONLY valid JSON — no markdown, no explanation:
 
       mediaRecorder.start();
 
-      const qWords = format === 'chatgpt' ? question.split(/\s+/).filter(w => w.trim() !== '') : term.split(/\s+/).filter(w => w.trim() !== '');
-      const aWords = format === 'chatgpt' ? answer.split(/\s+/).filter(w => w.trim() !== '') : translation.split(/\s+/).filter(w => w.trim() !== '');
+      const qWords = format === 'chatgpt' ? question.split(/\s+/).filter(w => w.trim() !== '') : format === 'translator' ? term.split(/\s+/).filter(w => w.trim() !== '') : skill.split(/\s+/).filter(w => w.trim() !== '');
+      const aWords = format === 'chatgpt' ? answer.split(/\s+/).filter(w => w.trim() !== '') : format === 'translator' ? translation.split(/\s+/).filter(w => w.trim() !== '') : aiComparison.split(/\s+/).filter(w => w.trim() !== '');
       const qTypingTime = qWords.length * msPerWord;
       const aTypingTime = aWords.length * msPerWord;
-      const totalDuration = format === 'chatgpt'
-        ? qTypingTime + preSendPause + slideTime + preAnswerPause + aTypingTime + 2000
-        : qTypingTime + preSendPause + aTypingTime + 2000;
+      let totalDuration: number;
+      if (format === 'chatgpt') {
+        totalDuration = qTypingTime + preSendPause + slideTime + preAnswerPause + aTypingTime + 2000;
+      } else if (format === 'translator') {
+        totalDuration = qTypingTime + preSendPause + aTypingTime + 2000;
+      } else {
+        const [humanPart, aiPart] = aiComparison.split('|').map(s => s.trim());
+        const humanWords = humanPart.split(/\s+/).filter(Boolean);
+        const aiWords = (aiPart || '').split(/\s+/).filter(Boolean);
+        totalDuration = qTypingTime + 600 + humanWords.length * msPerWord + 800 + aiWords.length * msPerWord + 2000;
+      }
 
       let startTime: number | null = null;
       const animate = (timestamp: number) => {
@@ -978,8 +1250,10 @@ Respond with ONLY valid JSON — no markdown, no explanation:
         const elapsed = timestamp - startTime;
         if (format === 'chatgpt') {
           drawChatGPTFrame(ctx, elapsed, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
-        } else {
+        } else if (format === 'translator') {
           drawTranslatorFrame(ctx, elapsed, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
+        } else {
+          drawLeftBehindFrame(ctx, elapsed, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
         }
         if (elapsed < totalDuration) {
           animationFrameRef.current = requestAnimationFrame(animate);
@@ -1121,17 +1395,19 @@ Respond with ONLY valid JSON — no markdown, no explanation:
     if (canvasRef.current && !isRecording) {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
-        const qWords = format === 'chatgpt' ? question.split(/\s+/).filter(w => w.trim() !== '') : term.split(/\s+/).filter(w => w.trim() !== '');
-        const aWords = format === 'chatgpt' ? answer.split(/\s+/).filter(w => w.trim() !== '') : translation.split(/\s+/).filter(w => w.trim() !== '');
+        const qWords = format === 'chatgpt' ? question.split(/\s+/).filter(w => w.trim() !== '') : format === 'translator' ? term.split(/\s+/).filter(w => w.trim() !== '') : skill.split(/\s+/).filter(w => w.trim() !== '');
+        const aWords = format === 'chatgpt' ? answer.split(/\s+/).filter(w => w.trim() !== '') : format === 'translator' ? translation.split(/\s+/).filter(w => w.trim() !== '') : aiComparison.split(/\s+/).filter(w => w.trim() !== '');
         // Draw the fully completed frame
         if (format === 'chatgpt') {
           drawChatGPTFrame(ctx, 999999, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
-        } else {
+        } else if (format === 'translator') {
           drawTranslatorFrame(ctx, 999999, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
+        } else {
+          drawLeftBehindFrame(ctx, 999999, qWords, aWords, topText, topTextFont, topTextColor, topTextSize);
         }
       }
     }
-  }, [question, answer, term, translation, format, isRecording, topText, topTextFont, topTextColor, topTextSize]);
+  }, [question, answer, term, translation, skill, aiComparison, format, isRecording, topText, topTextFont, topTextColor, topTextSize]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1163,6 +1439,17 @@ Respond with ONLY valid JSON — no markdown, no explanation:
               }`}
             >
               Corporate Translator
+            </button>
+            <button
+              onClick={() => setFormat('leftbehind')}
+              disabled={isRecording}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                format === 'leftbehind'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 border border-white/5'
+              }`}
+            >
+              AI Left Behind
             </button>
           </div>
 
@@ -1310,29 +1597,29 @@ Respond with ONLY valid JSON — no markdown, no explanation:
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-neutral-300">
-                {format === 'chatgpt' ? 'User Question' : 'Corporate Term'}
+                {format === 'chatgpt' ? 'User Question' : format === 'translator' ? 'Corporate Term' : 'Skill Being Replaced'}
               </label>
             </div>
-            <textarea 
-              value={format === 'chatgpt' ? question : term}
-              onChange={(e) => format === 'chatgpt' ? setQuestion(e.target.value) : setTerm(e.target.value)}
+            <textarea
+              value={format === 'chatgpt' ? question : format === 'translator' ? term : skill}
+              onChange={(e) => format === 'chatgpt' ? setQuestion(e.target.value) : format === 'translator' ? setTerm(e.target.value) : setSkill(e.target.value)}
               className="w-full h-32 bg-neutral-950/50 border border-white/10 rounded-xl p-4 text-neutral-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none resize-none transition-all"
-              placeholder={format === 'chatgpt' ? "Type the user's question here..." : "Type the corporate term here..."}
+              placeholder={format === 'chatgpt' ? "Type the user's question here..." : format === 'translator' ? "Type the corporate term here..." : "E.g. Making a PowerPoint presentation"}
               disabled={isRecording}
             />
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-neutral-300">
-                {format === 'chatgpt' ? 'Unfiltered Answer' : 'Unfiltered Translation'}
+                {format === 'chatgpt' ? 'Unfiltered Answer' : format === 'translator' ? 'Unfiltered Translation' : 'The Brutal Comparison'}
               </label>
             </div>
-            <textarea 
-              value={format === 'chatgpt' ? answer : translation}
-              onChange={(e) => format === 'chatgpt' ? setAnswer(e.target.value) : setTranslation(e.target.value)}
+            <textarea
+              value={format === 'chatgpt' ? answer : format === 'translator' ? translation : aiComparison}
+              onChange={(e) => format === 'chatgpt' ? setAnswer(e.target.value) : format === 'translator' ? setTranslation(e.target.value) : setAiComparison(e.target.value)}
               className="w-full h-48 bg-neutral-950/50 border border-white/10 rounded-xl p-4 text-neutral-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none resize-none transition-all"
-              placeholder={format === 'chatgpt' ? "Type the unfiltered answer here..." : "Type the unfiltered translation here..."}
+              placeholder={format === 'chatgpt' ? "Type the unfiltered answer here..." : format === 'translator' ? "Type the unfiltered translation here..." : "Human side | AI side — use | to split (e.g. 'You spent 2 days on this.|AI does it in 11 seconds.')"}
               disabled={isRecording}
             />
           </div>
