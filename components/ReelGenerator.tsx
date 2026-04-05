@@ -17,8 +17,9 @@ Style rules:
 - Use real Indian pain points: EPFO, TDS, notice period, service bonds, appraisal bell curve, Diwali bonus that isn't a bonus.
 - Reference the Indian audience's world: UPSC droppers pivoting to product management, "parents mein engineer chahiye tha", Shark Tank India cringe, LinkedIn India hustle bros, MBA from tier-3 college calling themselves "thought leaders".
 - 2026 specifics: AI-washing, vibe-coding, layoffs at profitable companies, "agentic workflows" nobody understands, RTO mandates from CEOs who expense WeWork.
-- Punchline MUST land at the very end. Setup → escalation → gut-punch.
-- Answer/translation under 250 characters. Every word earns its place.`;
+- ONE idea per post, executed perfectly. Never cram multiple grievances into one answer. Three half-punches are worse than one clean hit.
+- Punchline MUST land at the very end. Setup → escalation → gut-punch. Stop there.
+- Answer/translation strictly under 180 characters. Cut every word that isn't earning its place. Brevity IS the punchline.`;
 
 const DEFAULT_CATEGORIES = [
   // Appraisal & Salary
@@ -279,16 +280,20 @@ EXAMPLE 4:
 
 WHAT SEPARATES THESE FROM GENERIC:
 - The question sounds like a real human typed it at 11 PM in despair — specific numbers, specific mechanisms
-- The answer names the exact trap (F&F, relieving letter, bell curve math) — not just "this is unfair"
-- The punchline reframes everything in one sentence that makes you go "wait, that's exactly right"
-- Short setup → escalation → gut-punch. Never explain the joke.
-- The caption adds a fresh angle or observation that extends the joke — 1-2 punchy sentences, then a blank line, then up to 5 hashtags.
+- The answer makes ONE point, not three. One idea, executed perfectly.
+- The punchline is the last sentence and it reframes everything in one hit. Never explain the joke.
+- Short setup → escalation → gut-punch. Stop there.
+
+WHAT BAD LOOKS LIKE (do NOT do this):
+answer: "They'll call you bhai, make you work 14 hours on agentic Excel sheets, fire you over Slack when runway hits zero, hold your F&F while the founder buys a Thar." — TOO MANY IDEAS, reads like a rant, no single punchline lands.
+
+answer: "Because record profits require maintaining margins. You are the margin." — THIS is correct. One idea, door-closing punchline.
 
 Now generate one for the given topic. Rules:
 - topText: Max 6 words. Specific enough to feel like a personal attack on every Indian corporate employee.
 - question: Under 12 words. Plain desperate human language, not corporate speak.
-- answer: Under 250 characters. Name the specific mechanism. Punchline last.
-- caption: 1-2 punchy sentences that extend the joke or call out the audience (e.g. "Tag someone who...", "Save this for appraisal season.", a sharp observation). Then a blank line. Then up to 5 hashtags space-separated. Total caption under 300 characters.
+- answer: Strictly under 180 characters. ONE mechanism, named precisely. Punchline is the last sentence. Count the characters — if over 180, cut mercilessly.
+- caption: 1-2 punchy sentences that extend the joke or call out the audience ("Tag someone who...", "Save this for appraisal season.", a sharp observation). Then a blank line. Then up to 5 hashtags space-separated.
 
 Respond with ONLY valid JSON — no markdown, no explanation:
 {
@@ -319,17 +324,21 @@ EXAMPLE 4:
 {"topText":"HR Recognition Layer 🏆","term":"We believe in recognizing talent","translation":"Your hike was 0%. This conversation is the recognition. Frame it if you want.","caption":"The recognition was free. Which is exactly what it was worth. 🏆\n\n#indiancorporate #appraisalseason #officememes #9to5india #corporatelife"}
 
 WHAT SEPARATES THESE FROM GENERIC:
-- The term is something every Indian employee has heard and winced at — real, specific, not a made-up buzzword
-- The translation names the exact mechanism of the gap (no equity, F&F held hostage, zero-input appraisal) — not just "they're lying"
-- The punchline lands like a door closing. One sentence that reframes everything.
-- Context → real meaning → gut-punch. Never over-explain.
-- The caption adds a fresh angle — 1-2 punchy sentences that call out the audience or extend the joke, then hashtags.
+- The term is something every Indian employee has heard and physically winced at. Avoid dead horses like "we're a family" — find the more specific, less-memed version.
+- The translation makes ONE point only. Names the exact mechanism (equity, F&F, notice period, bell curve) — not a list of everything wrong.
+- The punchline is the last sentence. It closes like a door. One sentence. Done.
+- Context → real meaning → gut-punch. Stop there. Never list multiple grievances.
+
+WHAT BAD LOOKS LIKE (do NOT do this):
+translation: "We'll call you bhai, use you for 14 hours on Excel, fire you via Slack when runway hits zero, hold your F&F while the founder buys a Thar." — TOO MANY IDEAS. Three punches, none of them land. This is a rant.
+
+translation: "Your hike was 0%. This conversation is the recognition. Frame it if you want." — THIS is correct. One idea. Punchline lands.
 
 Now generate one for the given topic. Rules:
 - topText: Max 6 words. Specific enough to make an Indian office worker stop mid-scroll.
-- term: A real phrase Indian employees actually hear. Can be a full sentence.
-- translation: Under 250 characters. Name the specific mechanism. Punchline last.
-- caption: 1-2 punchy sentences that extend the joke or call out the audience (e.g. "Tag someone who...", a sharp observation, "Save this for..."). Then a blank line. Then up to 5 hashtags space-separated. Total caption under 300 characters.
+- term: A real phrase Indian employees actually hear. Avoid the most overused ones (e.g. "we're a family" is dead). Pick the specific, slightly-less-obvious version that still hits.
+- translation: Strictly under 180 characters. ONE mechanism, named precisely. Punchline is the last sentence. Count characters — if over 180, cut mercilessly.
+- caption: 1-2 punchy sentences that extend the joke or call out the audience ("Tag someone who...", a sharp observation, "Save this for..."). Then a blank line. Then up to 5 hashtags space-separated.
 
 Respond with ONLY valid JSON — no markdown, no explanation:
 {
