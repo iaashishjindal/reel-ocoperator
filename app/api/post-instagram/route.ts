@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     console.log(`[post-instagram] Sending to Make.com — videoUrl: ${videoUrl}${scheduled_at ? `, scheduled_at: ${scheduled_at}` : ''}`);
 
-    const payload: Record<string, string> = { video_url: videoUrl, videoUrl, caption };
+    const payload: Record<string, string> = { videoUrl, caption };
     if (scheduled_at) payload.scheduled_at = scheduled_at;
 
     const response = await fetch(webhookUrl, {
